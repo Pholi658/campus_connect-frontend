@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Vibrant Green Palette from User Sketch */
+  --color-brand-primary: #10b981; /* Primary Green */
+  --color-brand-secondary: #059669; /* Darker Green */
+  --color-accent: #34d399; /* Lighter Green accent */
+  --color-bg-main: #f0fdf4; /* Very pale green background */
+  --color-brand-slate: #064e3b; /* Deep green-slate for text */
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bg-main text-slate-800 antialiased;
+  }
+}
+

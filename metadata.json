@@ -1,0 +1,10 @@
+{
+  "name": "Campus Connect Lesotho",
+  "description": "A premier student and vendor marketplace for Lesotho, featuring streamlined listing and seamless student-to-vendor connections.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
