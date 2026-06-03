@@ -84,7 +84,7 @@ const Auth: React.FC = () => {
       const data = response.data;
 
       // Extract token dynamically for standard MongoDB / Custom backends
-      const token = data.token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
+      const token = data.access_token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
 
       // Mapping backend response to store user format
       const user = {

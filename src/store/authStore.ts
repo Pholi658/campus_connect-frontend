@@ -43,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => {
     try {
       if (user) {
+        console.log("**********Persisting user session:")
         localStorage.setItem('campus_connect_user', JSON.stringify(user));
       } else {
         localStorage.removeItem('campus_connect_user');
