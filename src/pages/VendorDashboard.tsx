@@ -58,6 +58,12 @@ const CAMPUS_OPTIONS = [
 
 const CATEGORIES = ['Electronics', 'Food', 'Books', 'Handmade', 'Services', 'Clothing'];
 
+const PLACEHOLDER_LISTED_PRODUCTS = [
+  'Original HP/Lenovo 65W Type-C Charger',
+  'Speedy C++ & JS Lab Tutoring [Per Hour]',
+  'Generic Campus Accessories Paket'
+];
+
 const VendorDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const [deals, setDeals] = useState<any[]>(() => {
@@ -122,6 +128,11 @@ const VendorDashboard: React.FC = () => {
   // Proposal modal input state
   const [proposalPrice, setProposalPrice] = useState('');
   const [proposalMsg, setProposalMsg] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('Original HP/Lenovo 65W Type-C Charger');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [sessionOffers, setSessionOffers] = useState<any[]>([]);
 
   const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
     try {
@@ -131,43 +142,43 @@ const VendorDashboard: React.FC = () => {
       const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
       const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
 
-      // const response = await dataApi.sync({
-      //   requests,
-      //   proposals: proposalsList
-      // });
+      const response = await dataApi.sync({
+        requests,
+        proposals: proposalsList
+      });
 
-      // if (response && response.data) {
-      //   const serverRequests = response.data.requests || [];
-      //   const serverProposals = response.data.proposals || [];
+      if (response && response.data) {
+        const serverRequests = response.data.requests || [];
+        const serverProposals = response.data.proposals || [];
 
-      //   // Merge requests, server-side is authority
-      //   const mergedRequests = [...requests];
-      //   serverRequests.forEach((sr: any) => {
-      //     const idx = mergedRequests.findIndex(r => r.id === sr.id);
-      //     if (idx === -1) {
-      //       mergedRequests.push(sr);
-      //     } else {
-      //       mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
-      //     }
-      //   });
+        // Merge requests, server-side is authority
+        const mergedRequests = [...requests];
+        serverRequests.forEach((sr: any) => {
+          const idx = mergedRequests.findIndex(r => r.id === sr.id);
+          if (idx === -1) {
+            mergedRequests.push(sr);
+          } else {
+            mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+          }
+        });
 
-      //   // Merge proposals
-      //   const mergedProposals = [...proposalsList];
-      //   serverProposals.forEach((sp: any) => {
-      //     const idx = mergedProposals.findIndex(p => p.id === sp.id);
-      //     if (idx === -1) {
-      //       mergedProposals.push(sp);
-      //     } else {
-      //       mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
-      //     }
-      //   });
+        // Merge proposals
+        const mergedProposals = [...proposalsList];
+        serverProposals.forEach((sp: any) => {
+          const idx = mergedProposals.findIndex(p => p.id === sp.id);
+          if (idx === -1) {
+            mergedProposals.push(sp);
+          } else {
+            mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+          }
+        });
 
-      //   localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
-      //   localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
-
-      //   setStudentRequests(mergedRequests);
-      //   setProposals(mergedProposals);
-      // }
+        if (mergedRequests.length > 0) {
+          localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+          setStudentRequests(mergedRequests);
+        }
+        setProposals(mergedProposals);
+      }
     } catch (err) {
       console.warn("Real-time cloud database sync skipped, offline mode:", err);
     }
@@ -177,22 +188,51 @@ const VendorDashboard: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'auto' });
     loadStudentRequests();
     syncWithServerDatabase();
+
+    const pollInterval = setInterval(() => {
+      loadStudentRequests();
+    }, 15000);
+
+    return () => clearInterval(pollInterval);
   }, []);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const response = await dataApi.getOffers();
+        if (response && Array.isArray(response.data)) {
+          const filteredOffers = response.data.filter((offer: any) => offer.vendorName === user?.displayName);
+          setProposals(filteredOffers);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch offers from server:', err);
+      }
+    };
+    fetchOffers();
+  }, [user?.displayName]);
 
   useEffect(() => {
     localStorage.setItem(`vendor_deals_${user?.uid || 'default'}`, JSON.stringify(deals));
   }, [deals, user]);
 
-  useEffect(() => {
-    localStorage.setItem('client_shared_proposals', JSON.stringify(proposals));
-  }, [proposals, user]);
-
   const loadStudentRequests = async () => {
     try {
       const response = await dataApi.getRequests();
-      setStudentRequests(response.data);
+      const serverRequests = Array.isArray(response.data) ? response.data : [];
+      if (serverRequests.length > 0) {
+        setStudentRequests(serverRequests);
+        localStorage.setItem('client_student_requests', JSON.stringify(serverRequests));
+        return;
+      }
     } catch (err) {
-      console.error("Failed to load requests:", err);
+      console.warn('Direct API fetch failed, falling back to localStorage:', err);
+    }
+    // Fallback to localStorage
+    try {
+      const local = localStorage.getItem('client_student_requests');
+      setStudentRequests(local ? JSON.parse(local) : []);
+    } catch {
+      setStudentRequests([]);
     }
   };
 
@@ -238,35 +278,89 @@ const VendorDashboard: React.FC = () => {
     setSelectedReqForProposal(req);
     setProposalPrice(req.budget);
     setProposalMsg(`Greetings ${req.student}! I can definitely assist you with your request for "${req.item}". `);
+    setSelectedProduct('Original HP/Lenovo 65W Type-C Charger');
+    setSubmitError(null);
+    setSubmitSuccess(false);
   };
 
-  const handleSubmitProposal = (e: React.FormEvent) => {
+  const handleSubmitProposal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedReqForProposal) return;
 
-    const newProp = {
-      request_id: selectedReqForProposal.id,
-      price: parseFloat(proposalPrice),
-      message: proposalMsg,
-      vendor_name: user?.displayName || 'Roma Tech Hub',
-      vendor_phone: '+266 5890 1234',
-      vendor_rating: 4.9
-    };
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
 
-    const updated = [newProp, ...proposals];
-    setProposals(updated);
-    dataApi.createProposal(newProp);
-    syncWithServerDatabase(undefined, updated);
+    try {
+      const payload = {
+        request_id: selectedReqForProposal.id,
+        price: parseFloat(proposalPrice) || 0,
+        message: proposalMsg,
+        product: selectedProduct
+      };
 
-    setSelectedReqForProposal(null);
-    setProposalPrice('');
-    setProposalMsg('');
+      const response = await dataApi.createProposal(payload);
+
+      const serverOffer = response?.data;
+      const newProp = serverOffer ? {
+        id: serverOffer.id || `prop-usr-${Date.now()}`,
+        requestId: serverOffer.requestId || serverOffer.request_id || selectedReqForProposal.id,
+        requestTitle: serverOffer.requestTitle || selectedReqForProposal.item,
+        studentName: serverOffer.studentName || selectedReqForProposal.student,
+        proposedPrice: serverOffer.proposedPrice || serverOffer.price || parseFloat(proposalPrice) || 0,
+        message: serverOffer.message || proposalMsg,
+        product: serverOffer.product || selectedProduct,
+        vendorName: serverOffer.vendorName || user?.displayName || 'Roma Tech Hub',
+        vendorPhone: serverOffer.vendorPhone || '+266 5890 1234',
+        vendorRating: serverOffer.vendorRating || 4.9,
+        status: serverOffer.status || 'pending',
+        timestamp: serverOffer.timestamp || new Date().toISOString()
+      } : {
+        id: `prop-usr-${Date.now()}`,
+        requestId: selectedReqForProposal.id,
+        requestTitle: selectedReqForProposal.item,
+        studentName: selectedReqForProposal.student,
+        proposedPrice: parseFloat(proposalPrice) || 0,
+        message: proposalMsg,
+        product: selectedProduct,
+        vendorName: user?.displayName || 'Roma Tech Hub',
+        vendorPhone: '+266 5890 1234',
+        vendorRating: 4.9,
+        status: 'pending',
+        timestamp: new Date().toISOString()
+      };
+
+      const updated = [newProp, ...proposals];
+      setProposals(updated);
+      setSessionOffers(prev => [newProp, ...prev]);
+      syncWithServerDatabase(undefined, updated);
+
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        setSelectedReqForProposal(null);
+        setProposalPrice('');
+        setProposalMsg('');
+        setSelectedProduct('Original HP/Lenovo 65W Type-C Charger');
+        setSubmitSuccess(false);
+      }, 1500);
+
+    } catch (err: any) {
+      console.error('Failed to submit offer:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to submit proposal offer. Please try again.';
+      setSubmitError(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleCancelProposal = (id: string) => {
+  const handleCancelProposal = async (id: string) => {
     const finalPropList = proposals.filter(p => p.id !== id);
     setProposals(finalPropList);
-    localStorage.setItem('client_shared_proposals', JSON.stringify(finalPropList));
+    try {
+      await dataApi.deleteRequest(id);
+    } catch (err) {
+      console.warn("Failed to delete proposal from backend:", err);
+    }
     syncWithServerDatabase(undefined, finalPropList);
   };
 
@@ -308,19 +402,7 @@ const VendorDashboard: React.FC = () => {
         </div>
 
         {/* Sales & Merchant Metric Badges */}
-        <div className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <div className="rounded-2xl sm:rounded-3xl bg-lime-50/80 p-4 sm:p-6 shadow-sm border border-lime-200/50 flex flex-col justify-between">
-            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-lime-100 text-lime-700 select-none">
-                <span className="text-xs sm:text-sm font-black font-mono">M</span>
-              </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-lime-800 uppercase tracking-widest leading-none">Gross Sales</h3>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-lime-950 mt-2">
-              M{totalSales}
-            </p>
-          </div>
-          
+        <div className="mb-12 grid grid-cols-2 gap-3 sm:gap-4">
           <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
             <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
               <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-blue-600">
@@ -340,23 +422,47 @@ const VendorDashboard: React.FC = () => {
             </div>
             <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{proposals.length}</p>
           </div>
-
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-            <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 font-bold">
-                <Star size={16} className="sm:w-5 sm:h-5" fill="currentColor" />
-              </div>
-              <h3 className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">Trust Score</h3>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">4.9 <span className="text-xs font-bold text-slate-400">/ 5.0</span></p>
-          </div>
         </div>
 
-        {/* Main Workspaces Layout (Split Screens) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* My Submitted Offers Section */}
+        <div className="mb-12 border border-slate-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm">
+          <h2 className="text-xl font-black text-slate-900 mb-2">My Submitted Offers</h2>
+          <p className="text-xs font-bold text-slate-500 mb-6">Offers dispatched to students during your active session.</p>
+          {sessionOffers.length === 0 ? (
+            <div className="p-8 text-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/40">
+              <p className="text-xs font-bold text-slate-400">No offers submitted in this session yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sessionOffers.map((o) => (
+                <div key={o.id} className="p-5 rounded-3xl bg-slate-50 border border-slate-150 flex flex-col justify-between">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 line-clamp-1">{o.requestTitle}</h4>
+                      <p className="text-xs text-slate-500 font-medium truncate mt-1">
+                        {o.message}
+                      </p>
+                    </div>
+                    <span className="text-sm font-black text-brand-primary font-mono bg-emerald-50 px-2.5 py-1 rounded-xl shrink-0">
+                      M{o.proposedPrice}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-4 self-stretch pt-3 border-t border-slate-200/50">
+                    <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-orange-600">
+                      <Clock size={12} /> {o.status || 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Main Workspaces Layout */}
+        <div className="space-y-8">
           
-          {/* LEFT: STUDENT REQ FEED (Proposals Arena) - 7 cols */}
-          <div className="lg:col-span-7 space-y-8">
+          {/* LEFT: STUDENT REQ FEED (Proposals Arena) */}
+          <div className="space-y-8">
             <div className="border border-slate-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-md">
               <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
@@ -367,14 +473,6 @@ const VendorDashboard: React.FC = () => {
                     Authentic needs posted by Lesotho university students. Pitch directly to secure orders!
                   </p>
                 </div>
-                
-                {/* Refresh CTA */}
-                <button 
-                  onClick={loadStudentRequests}
-                  className="rounded-xl px-4 py-2 border border-slate-100 hover:bg-slate-55 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-100 active:scale-95"
-                >
-                  Sync Needs
-                </button>
               </div>
 
               {/* Feed Filters */}
@@ -478,7 +576,7 @@ const VendorDashboard: React.FC = () => {
             </div>
 
             {/* SEND PROPOSALS LIST */}
-            <div className="border border-red-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-md">
+            <div className="border border-slate-100/80 bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-md">
               <h2 className="text-xl font-black text-slate-900 mb-2">
                 My Sales <span className="text-brand-primary">Pitches & Offers</span>
               </h2>
@@ -526,40 +624,6 @@ const VendorDashboard: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* RIGHT: DEAL MANAGER / STORE FRONT / CATALOG - 5 cols */}
-          <div className="lg:col-span-12 xl:col-span-5 space-y-8">
-
-            {/* QUICK BRANDING PREVIEW CARD */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-8 text-white shadow-xl">
-              <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-primary/10 blur-3xl"></div>
-              
-              <div className="flex items-center gap-3 mb-4">
-                <Store size={24} className="text-brand-primary" />
-                <h3 className="text-lg font-black tracking-tight">Active Micro-Store</h3>
-              </div>
-
-              <p className="text-xs leading-relaxed text-slate-400 mb-6 font-medium">
-                Your business, <strong className="text-white">{user?.displayName || 'Studio'}</strong>, is listed on the student store list with an active rating. Add campus locations to increase high-conversion student views.
-              </p>
-
-              <div className="space-y-2.5 border-t border-white/10 pt-4 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Seller Tier</span>
-                  <span className="text-slate-300">Verified Silver Class</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Listed Active Areas</span>
-                  <span className="text-slate-300">Roma, Maseru Hub</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Response Speed</span>
-                  <span className="text-brand-primary">‹ 1 hour average</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* MODAL: ADD DEAL CARD */}
@@ -721,8 +785,16 @@ const VendorDashboard: React.FC = () => {
                     </p>
                   </div>
                   <button 
-                    onClick={() => setSelectedReqForProposal(null)}
-                    className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all select-none"
+                    onClick={() => {
+                      setSelectedReqForProposal(null);
+                      setProposalPrice('');
+                      setProposalMsg('');
+                      setSelectedProduct('Original HP/Lenovo 65W Type-C Charger');
+                      setSubmitError(null);
+                      setSubmitSuccess(false);
+                    }}
+                    disabled={isSubmitting}
+                    className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all select-none disabled:opacity-50"
                   >
                     <X size={20} />
                   </button>
@@ -740,44 +812,86 @@ const VendorDashboard: React.FC = () => {
                   </div>
                 </div>
 
+                {submitSuccess && (
+                  <div className="mb-4 p-4 bg-emerald-50 text-brand-primary text-xs font-bold rounded-2xl border border-emerald-100 flex items-center gap-2">
+                    <CheckCircle size={20} className="shrink-0 text-emerald-500" />
+                    <span>Offer transmitted successfully! Closing...</span>
+                  </div>
+                )}
+
+                {submitError && (
+                  <div className="mb-4 p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl border border-rose-100 flex items-center gap-2">
+                    <AlertCircle size={20} className="shrink-0 text-rose-500 animate-bounce" />
+                    <span>{submitError}</span>
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmitProposal} className="space-y-4">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">My Price Offer (Loti M)</label>
-                    <input 
-                      required
-                      type="number"
-                      placeholder="e.g. 350"
-                      value={proposalPrice}
-                      onChange={(e) => setProposalPrice(e.target.value)}
-                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary"
-                    />
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1 block mb-1">Your listed products</label>
+                    <select
+                      disabled={isSubmitting || submitSuccess}
+                      value={selectedProduct}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
+                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary cursor-pointer disabled:opacity-50"
+                    >
+                      {PLACEHOLDER_LISTED_PRODUCTS.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1">Direct Message to Student</label>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1 block mb-1">My Price Offer (Loti M)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-black text-slate-400 select-none">M</span>
+                      <input 
+                        required
+                        disabled={isSubmitting || submitSuccess}
+                        type="number"
+                        placeholder="e.g. 350"
+                        value={proposalPrice}
+                        onChange={(e) => setProposalPrice(e.target.value)}
+                        className="w-full rounded-2xl bg-slate-55 pl-9 pr-4 py-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-400 ml-1 block mb-1">Pitch Message</label>
                     <textarea 
                       required
-                      placeholder="Introduce your store name, product condition, diagnostic information, pickup details, or delivery availability..."
+                      disabled={isSubmitting || submitSuccess}
+                      placeholder="Introduce your store name, product condition, delivery availability, or options..."
                       value={proposalMsg}
                       onChange={(e) => setProposalMsg(e.target.value)}
                       rows={4}
-                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary resize-none leading-relaxed"
+                      className="w-full rounded-2xl bg-slate-55 p-3.5 text-sm font-semibold border bg-slate-50/50 border-slate-100 focus:outline-none focus:border-brand-primary resize-none leading-relaxed disabled:opacity-50"
                     />
                   </div>
 
                   <div className="pt-4 flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setSelectedReqForProposal(null)}
-                      className="flex-1 py-4 text-sm font-black text-slate-500 uppercase tracking-widest bg-slate-50 hover:bg-slate-100 rounded-2xl border transition-all select-none"
+                      disabled={isSubmitting || submitSuccess}
+                      onClick={() => {
+                        setSelectedReqForProposal(null);
+                        setProposalPrice('');
+                        setProposalMsg('');
+                        setSelectedProduct('Original HP/Lenovo 65W Type-C Charger');
+                        setSubmitError(null);
+                        setSubmitSuccess(false);
+                      }}
+                      className="flex-1 py-4 text-sm font-black text-slate-500 uppercase tracking-widest bg-slate-50 hover:bg-slate-100 rounded-2xl border transition-all select-none disabled:opacity-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-4 text-sm font-black text-white uppercase tracking-widest bg-brand-primary hover:bg-emerald-600 rounded-2xl shadow-xl shadow-green-950/5 transition-all active:scale-95"
+                      disabled={isSubmitting || submitSuccess}
+                      className={`flex-1 py-4 text-sm font-black text-white uppercase tracking-widest bg-brand-primary hover:bg-emerald-600 rounded-2xl shadow-xl shadow-green-950/5 transition-all active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50 ${isSubmitting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                     >
-                      Send Offer
+                      {isSubmitting ? 'Submitting...' : submitSuccess ? 'Success!' : 'Submit Offer'}
                     </button>
                   </div>
                 </form>

@@ -16,6 +16,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import api, { dataApi } from '../lib/api';
 
 const SubmittedOffers: React.FC = () => {
   const { user } = useAuthStore();
@@ -59,6 +60,7 @@ const SubmittedOffers: React.FC = () => {
   const [editingProposal, setEditingProposal] = useState<any | null>(null);
   const [revisedPrice, setRevisedPrice] = useState('');
   const [revisedMsg, setRevisedMsg] = useState('');
+  const [expandedMsgs, setExpandedMsgs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -69,13 +71,33 @@ const SubmittedOffers: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('client_shared_proposals', JSON.stringify(proposals));
-  }, [proposals, user]);
+    const fetchOffers = async () => {
+      try {
+        console.log('Fetching offers from backend...');
+        const response = await dataApi.getOffers();
+        console.log('Fetched offers from backend:', response);
+        if (response && Array.isArray(response.data)) {
+          setProposals(response.data);
+          localStorage.setItem('client_shared_proposals', JSON.stringify(response.data));
+        }
+      } catch (err) {
+        console.warn('Silently falling back to localStorage proposals:', err);
+      }
+    };
+    fetchOffers();
+  }, []);
 
-  const handleWithdrawProposal = (id: string) => {
+  const handleWithdrawProposal = async (id: string) => {
     const confirmation = window.confirm('Are you sure you want to withdraw this pitch/offer?');
     if (confirmation) {
-      setProposals(proposals.filter(p => p.id !== id));
+      try {
+        await api.delete('/offers/' + id);
+      } catch (err) {
+        console.warn('Failed to delete offer from backend:', err);
+      }
+      const updatedProposals = proposals.filter(p => p.id !== id);
+      setProposals(updatedProposals);
+      localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
     }
   };
 
@@ -85,11 +107,11 @@ const SubmittedOffers: React.FC = () => {
     setRevisedMsg(p.message);
   };
 
-  const handleUpdateProposalValue = (e: React.FormEvent) => {
+  const handleUpdateProposalValue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProposal) return;
 
-    setProposals(proposals.map(p => {
+    const updatedProposals = proposals.map(p => {
       if (p.id === editingProposal.id) {
         return {
           ...p,
@@ -99,7 +121,19 @@ const SubmittedOffers: React.FC = () => {
         };
       }
       return p;
-    }));
+    });
+
+    setProposals(updatedProposals);
+    localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
+
+    try {
+      await api.put(`/offers/${editingProposal.id}`, {
+        price: parseFloat(revisedPrice),
+        message: revisedMsg
+      });
+    } catch (err) {
+      console.warn('Failed to update offer in backend:', err);
+    }
 
     setEditingProposal(null);
   };
@@ -247,137 +281,268 @@ const SubmittedOffers: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {filteredProposals.map((prop, idx) => {
-              // Try to find matching original student request for additional category/context
-              const relatedReq = studentRequests.find(r => r.id === prop.requestId);
-              const formattedDate = new Date(prop.timestamp).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
+          <div className="space-y-6">
+            {/* Mobile View: Stacked Cards (below md) */}
+            <div className="space-y-4 md:hidden">
+              {filteredProposals.map((prop, idx) => {
+                const relatedReq = studentRequests.find(r => r.id === prop.requestId);
+                const formattedDate = new Date(prop.timestamp).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                const isMsgExpanded = expandedMsgs[prop.id] || false;
 
-              return (
-                <motion.div
-                  key={prop.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className={`relative flex flex-col overflow-hidden rounded-[2.5rem] bg-white p-6 sm:p-7 shadow-sm border transition-all ${
-                    prop.status === 'accepted' 
-                      ? 'border-emerald-200 bg-emerald-50/10' 
-                      : prop.status === 'declined'
-                        ? 'border-slate-100 opacity-75'
-                        : 'border-slate-100 hover:shadow-md'
-                  }`}
-                >
-                  {/* Status & Price Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${
-                      prop.status === 'accepted'
-                        ? 'bg-emerald-50 text-brand-primary border border-emerald-100'
+                return (
+                  <div 
+                    key={prop.id} 
+                    className={`overflow-hidden rounded-[2rem] border p-5 shadow-sm space-y-4 bg-white transition-all ${
+                      prop.status === 'accepted' 
+                        ? 'border-emerald-200 bg-emerald-50/5' 
                         : prop.status === 'declined'
-                          ? 'bg-slate-100 text-slate-400'
-                          : 'bg-amber-50 text-amber-600 border border-amber-100'
-                    }`}>
-                      {prop.status === 'accepted' ? '✓ Agreement Formed' : prop.status === 'declined' ? 'Closed' : '⏱ Pitch Pending'}
-                    </span>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Your Quote</span>
-                      <span className="text-2xl font-black text-brand-primary font-mono select-none block mt-1">M{prop.proposedPrice}</span>
+                          ? 'border-slate-100 opacity-75'
+                          : 'border-slate-150'
+                    }`}
+                  >
+                    {/* Header: Request and Status Badge */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <h4 className="font-black text-slate-900 text-sm leading-tight">
+                          {prop.requestTitle}
+                        </h4>
+                        <div className="text-[10px] text-slate-400 font-bold flex flex-wrap items-center gap-2 mt-1">
+                          <span className="bg-slate-50 border border-slate-250 px-1.5 py-0.5 rounded text-[9px] text-slate-500 font-semibold font-sans">
+                            By {prop.studentName}
+                          </span>
+                          {relatedReq && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-slate-400 font-semibold font-sans">
+                              <MapPin size={9} /> {relatedReq.campus}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono font-semibold">
+                          Sent: {formattedDate}
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider shrink-0 ${
+                        prop.status === 'accepted'
+                          ? 'bg-emerald-50 text-brand-primary border border-emerald-100'
+                          : prop.status === 'declined'
+                            ? 'bg-slate-100 text-slate-400'
+                            : 'bg-amber-50 text-amber-600 border border-amber-100'
+                      }`}>
+                        {prop.status === 'accepted' ? '✓ Accepted' : prop.status === 'declined' ? 'Closed' : '⏱ Pending'}
+                      </span>
                     </div>
-                  </div>
 
-                  {/* Requested Item Block */}
-                  <div className="mb-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Requested Item</span>
-                    <h3 className="text-base font-black text-slate-900 leading-tight flex items-center gap-1.5 mt-0.5">
-                      <Tag size={14} className="text-slate-400 shrink-0" /> {prop.requestTitle}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400 font-medium">
-                      <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md font-mono">By {prop.studentName}</span>
-                      {relatedReq && (
-                        <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                          <MapPin size={10} /> {relatedReq.campus}
-                        </span>
+                    {/* Product Offered and Price Row */}
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-100">
+                        <Tag size={12} className="text-slate-400" /> {prop.product || 'Standard Matching Item'}
+                      </span>
+                      <span className="text-sm font-black text-brand-primary bg-emerald-50/50 px-2.5 py-1 rounded-xl border border-emerald-100 font-mono shrink-0">
+                        M{prop.proposedPrice}
+                      </span>
+                    </div>
+
+                    {/* Pitch message */}
+                    <div className="bg-slate-50/50 border border-slate-100/60 p-3.5 rounded-2xl">
+                      <p className={`text-xs font-semibold text-slate-500 italic leading-relaxed ${isMsgExpanded ? '' : 'line-clamp-3'}`}>
+                        "{prop.message}"
+                      </p>
+                      {prop.message && prop.message.length > 80 && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedMsgs(prev => ({ ...prev, [prop.id]: !isMsgExpanded }))}
+                          className="text-[10px] font-black text-brand-primary uppercase mt-2 focus:outline-none focus:ring-0 select-none cursor-pointer"
+                        >
+                          {isMsgExpanded ? 'Show less' : 'Show more'}
+                        </button>
                       )}
                     </div>
-                  </div>
 
-                  {/* Letter / Msg Offer Text Description */}
-                  <div className="bg-slate-50/60 border border-slate-100/60 p-4 rounded-2xl mb-5 flex-1">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Direct Pitch Pitch Message</p>
-                    <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                      "{prop.message}"
-                    </p>
-                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-200/30 text-[10px] text-slate-400 font-bold font-mono">
-                      <span className="flex items-center gap-1"><Clock size={10} /> Sent: {formattedDate}</span>
-                      {relatedReq && <span className="text-slate-400">Budget Limit: M{relatedReq.budget}</span>}
-                    </div>
-                  </div>
-
-                  {/* Simulation of interaction / Actions bottom bar */}
-                  <div className="flex flex-col gap-3.5 pt-4.5 border-t border-slate-100 mt-auto">
-                    {/* Simulator Action Drawer for testing */}
-                    <div className="flex items-center justify-between gap-2.5 bg-slate-50/50 p-2.5 rounded-xl border border-dashed border-slate-200 text-xs">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Response (Simulate)</span>
+                    {/* Simulator Controls Row */}
+                    <div className="flex items-center justify-between gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px]">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider px-1">Sim:</span>
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleSimulateStudentStatus(prop.id, 'accepted')}
-                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
+                          className={`px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] transition-all select-none ${
                             prop.status === 'accepted' 
-                              ? 'bg-emerald-50 text-brand-primary border-emerald-100'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
+                              ? 'bg-emerald-50 text-brand-primary border-emerald-100' 
+                              : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
                           }`}
                         >
-                          Agree
+                          Accept
                         </button>
                         <button
                           onClick={() => handleSimulateStudentStatus(prop.id, 'declined')}
-                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
+                          className={`px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] transition-all select-none ${
                             prop.status === 'declined' 
-                              ? 'bg-rose-50 text-rose-500 border-rose-100'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
+                              ? 'bg-rose-50 text-rose-500 border-rose-100' 
+                              : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
                           }`}
                         >
                           Decline
                         </button>
                         <button
                           onClick={() => handleSimulateStudentStatus(prop.id, 'pending')}
-                          className={`px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all select-none active:scale-95 ${
-                            prop.status === 'pending' 
-                              ? 'bg-amber-50 text-amber-500 border-amber-100'
-                              : 'bg-white text-slate-500 hover:bg-slate-100'
-                          }`}
+                          className="px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] bg-white hover:bg-slate-100 border-slate-100 text-slate-500 transition-all z-0 cursor-pointer select-none"
                         >
                           Reset
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1 mt-1 sm:mt-0">
+                    {/* Action buttons (Withdraw, Revise) */}
+                    <div className="flex gap-3 pt-1">
                       <button
                         onClick={() => handleWithdrawProposal(prop.id)}
-                        className="rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-wider transition-all border border-transparent hover:bg-red-50 text-slate-400 hover:text-red-500 select-none active:scale-90 inline-flex items-center gap-1"
-                        title="Withdraw Pitch Offer"
+                        className="flex-1 py-3 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-red-500 bg-white border border-slate-200 hover:border-red-200 rounded-xl transition-all select-none text-center inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <Trash2 size={13} /> Withdraw Quote
+                        <Trash2 size={13} /> Withdraw
                       </button>
-
                       {prop.status === 'pending' && (
                         <button
                           onClick={() => handleOpenEditProposal(prop)}
-                          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 text-[10px] font-black uppercase tracking-wider transition-all select-none active:scale-95 inline-flex items-center gap-1"
+                          className="flex-1 py-3 text-xs font-black uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all select-none text-center inline-flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          Revise Offer <ArrowRight size={12} />
+                          Revise
                         </button>
                       )}
                     </div>
                   </div>
-                </motion.div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Table (hidden on mobile, visible on md and above) */}
+            <div className="hidden md:block overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-md">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] border-collapse text-left text-sm text-slate-500">
+                  <thead className="bg-slate-50/70 text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                    <tr>
+                      <th scope="col" className="px-6 py-4.5">Request</th>
+                      <th scope="col" className="px-6 py-4.5">Product Offered</th>
+                      <th scope="col" className="px-6 py-4.5">Price</th>
+                      <th scope="col" className="px-6 py-4.5">Message</th>
+                      <th scope="col" className="px-6 py-4.5">Status</th>
+                      <th scope="col" className="px-6 py-4.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {filteredProposals.map((prop, idx) => {
+                      const relatedReq = studentRequests.find(r => r.id === prop.requestId);
+                      const formattedDate = new Date(prop.timestamp).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+
+                      return (
+                        <tr key={prop.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-6">
+                            <div>
+                              <div className="font-black text-slate-900 text-sm leading-tight">{prop.requestTitle}</div>
+                              <div className="text-xs text-slate-400 font-bold mt-1.5 flex items-center gap-2">
+                                <span className="bg-slate-50 border border-slate-250 px-1.5 py-0.5 rounded text-[10px] text-slate-500">By {prop.studentName}</span>
+                                {relatedReq && (
+                                  <span className="flex items-center gap-0.5 text-[10px] text-slate-400"><MapPin size={10} /> {relatedReq.campus}</span>
+                                )}
+                              </div>
+                              <div className="text-[9px] text-slate-400 font-mono mt-1 font-semibold">Sent: {formattedDate}</div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-6">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 text-slate-700 font-bold text-xs border border-slate-100">
+                              <Tag size={12} className="text-slate-400" /> {prop.product || 'Standard Matching Item'}
+                            </span>
+                          </td>
+
+                          <td className="px-6 py-6 font-mono">
+                            <span className="text-sm font-black text-brand-primary bg-emerald-50/50 px-2.5 py-1 rounded-xl border border-emerald-100">
+                              M{prop.proposedPrice}
+                            </span>
+                          </td>
+
+                          <td className="px-6 py-6 max-w-xs">
+                            <p className="text-xs font-semibold text-slate-500 italic line-clamp-2" title={prop.message}>
+                              "{prop.message}"
+                            </p>
+                          </td>
+
+                          <td className="px-6 py-6">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${
+                              prop.status === 'accepted'
+                                ? 'bg-emerald-50 text-brand-primary border border-emerald-100'
+                                : prop.status === 'declined'
+                                  ? 'bg-slate-100 text-slate-400'
+                                  : 'bg-amber-50 text-amber-600 border border-amber-100'
+                            }`}>
+                              {prop.status === 'accepted' ? '✓ Accepted' : prop.status === 'declined' ? 'Closed' : '⏱ Pending'}
+                            </span>
+                          </td>
+
+                          <td className="px-6 py-6 text-right">
+                            <div className="flex flex-col gap-2.5 items-end">
+                              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-[9px]">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider px-1">Sim:</span>
+                                <button
+                                  onClick={() => handleSimulateStudentStatus(prop.id, 'accepted')}
+                                  className={`px-2 py-0.5 font-bold uppercase rounded-md border transition-all ${
+                                    prop.status === 'accepted' 
+                                      ? 'bg-emerald-50 text-brand-primary border-emerald-100' 
+                                      : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
+                                  }`}
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleSimulateStudentStatus(prop.id, 'declined')}
+                                  className={`px-2 py-0.5 font-bold uppercase rounded-md border transition-all ${
+                                    prop.status === 'declined' 
+                                      ? 'bg-rose-50 text-rose-500 border-rose-100' 
+                                      : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
+                                  }`}
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => handleSimulateStudentStatus(prop.id, 'pending')}
+                                  className="px-2 py-0.5 font-bold uppercase rounded-md border bg-white hover:bg-slate-100 border-slate-100 text-slate-500 transition-all z-0 cursor-pointer"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleWithdrawProposal(prop.id)}
+                                  className="text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-wider transition-all select-none z-0 cursor-pointer"
+                                >
+                                  Withdraw
+                                </button>
+                                {prop.status === 'pending' && (
+                                  <button
+                                    onClick={() => handleOpenEditProposal(prop)}
+                                    className="text-slate-900 hover:text-brand-primary text-[10px] font-black uppercase tracking-wider transition-all select-none z-0 cursor-pointer"
+                                  >
+                                    Revise
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 

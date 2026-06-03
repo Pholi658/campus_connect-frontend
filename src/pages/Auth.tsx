@@ -84,7 +84,7 @@ const Auth: React.FC = () => {
       const data = response.data;
 
       // Extract token dynamically for standard MongoDB / Custom backends
-      const token = data.access_token || data.token || data.jwt || data.accessToken || null;
+      const token = data.access_token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
 
       // Mapping backend response to store user format
       const user = {
@@ -92,7 +92,7 @@ const Auth: React.FC = () => {
         email: data.email || email,
         displayName: data.displayName || data.name || displayName || email.split('@')[0],
         photoURL: data.photoURL || null,
-        role: data.role
+        role: data.role || role
       };
       
       const authState = useAuthStore.getState();
@@ -103,7 +103,11 @@ const Auth: React.FC = () => {
       setShowSuccess(true);
       
       setTimeout(() => {
-        navigate(user.role === 'student' ? '/create-request' : '/dashboard');
+        if (user.role === 'vendor') {
+          navigate('/requests');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1500);
     } catch (err: any) {
       console.error('Auth error detailed:', err);
@@ -179,7 +183,11 @@ const Auth: React.FC = () => {
       setLoading(false);
       setShowSuccess(true);
       setTimeout(() => {
-        navigate(selectedRole === 'student' ? '/create-request' : '/dashboard');
+        if (selectedRole === 'vendor') {
+          navigate('/requests');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1500);
     }, 800);
   };
@@ -332,7 +340,7 @@ const Auth: React.FC = () => {
               CampusConnect Lesotho
             </p>
             <p className="mt-2 text-sm font-medium text-slate-500">
-              {mode === 'login' ? 'Login to your student account' : 'Start buying and selling today'}
+              {mode === 'login' ? 'Login to your account' : 'Start buying and selling today'}
             </p>
           </div>
 
