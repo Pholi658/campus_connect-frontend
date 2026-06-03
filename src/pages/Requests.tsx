@@ -33,6 +33,7 @@ const Requests: React.FC = () => {
   const [pitchPrice, setPitchPrice] = useState('');
   const [pitchMessage, setPitchMessage] = useState('');
   const [pitchSuccess, setPitchSuccess] = useState(false);
+  const [clicked, setClicked] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -304,35 +305,38 @@ const Requests: React.FC = () => {
       </AnimatePresence>
 
       {/* Header */}
-      <section className="bg-brand-secondary py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center text-center">
+      <section className="relative overflow-hidden bg-brand-secondary rounded-b-[2.5rem] pt-20 pb-16 sm:py-24">
+        {/* Radial Gradient Overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.08)_0%,transparent_70%)] pointer-events-none rounded-b-[2.5rem]" />
+        
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="flex flex-col items-center justify-center text-center space-y-6"
+          >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ 
-                scale: 1, 
-                opacity: 1,
-                rotateY: [0, 10, 0, -10, 0],
-                y: [0, -10, 0]
-              }}
-              transition={{ 
-                scale: { duration: 0.5 },
-                opacity: { duration: 0.5 },
-                rotateY: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-                y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-              }}
-              className="mb-8 flex items-center justify-center p-2"
-              style={{ perspective: 1000 }}
+              onClick={() => setClicked(true)}
+              animate={clicked ? {
+                scale: [1, 1.18, 0.94, 1.06, 1],
+                rotate: [0, -8, 6, -3, 0],
+              } : {}}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              onAnimationComplete={() => setClicked(false)}
+              className="cursor-pointer select-none flex items-center justify-center p-2"
             >
               <Logo className="h-24 w-24 drop-shadow-[0_20px_40px_rgba(34,197,94,0.3)] sm:h-32 sm:w-32" />
             </motion.div>
+            
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl">
               Student <span className="text-brand-primary">Wants.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg font-medium text-slate-300">
+            
+            <p className="max-w-xl text-lg font-medium text-slate-300">
               Direct market intelligence. See what students actually need right now and meet the demand instantly.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
