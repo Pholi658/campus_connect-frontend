@@ -75,8 +75,8 @@ const Auth: React.FC = () => {
         password,
         phone: `${countryCode}${phone}`.trim(),
         role,
-        ...(role === 'student' && school ? { school } : {})
-      };
+  ...(role === 'student' && school ? { school } : {})
+};
 
       const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
       const data = response.data;

@@ -70,12 +70,14 @@ const Auth: React.FC = () => {
 
     try {
       const payload = {
-        username: displayName.trim(),
-        email: email.trim(),
+        email,
         password,
-        phone: `${countryCode}${phone}`.trim(),
-        role,
-        ...(role === 'student' && school ? { school } : {})
+        name: displayName, // Added 'name' as a common alternative
+        displayName: mode === 'register' ? displayName : undefined,
+        role: mode === 'register' ? role : undefined,
+        phone: mode === 'register' ? `${countryCode}${phone}` : undefined,
+        phone_number: mode === 'register' ? `${countryCode}${phone}` : undefined, // Added common alternative
+        school: (mode === 'register' && role === 'student') ? school : undefined,
       };
 
       const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
