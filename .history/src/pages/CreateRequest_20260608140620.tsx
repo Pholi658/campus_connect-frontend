@@ -46,12 +46,11 @@ const CreateRequest: React.FC = () => {
     setError('');
     
     try {
-      await dataApi.createRequest({
-        item: title,
-        description,
-        category,
-        budget: parseFloat(budget),
-        timestamp: new Date().toISOString(),
+    item: title,    // ← maps the form's title field to backend's item field
+    description,
+    category,
+    budget,
+    timestamp: new Date().toISOString(),
       });
 
       setSuccess(true);

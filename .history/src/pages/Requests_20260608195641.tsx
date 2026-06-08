@@ -125,7 +125,7 @@ const handleSendPitch = async (e: React.FormEvent) => {
 
   try {
     // 🔥 THIS is your api.ts function
-    const response = await dataApi.createProposal({
+    const response = await dataapi.createProposal({
       request_id: selectedRequest.id, // backend expects request_id
       price: price,
       message:

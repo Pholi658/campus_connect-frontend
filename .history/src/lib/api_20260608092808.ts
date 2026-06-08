@@ -3,8 +3,8 @@ import axios from 'axios';
 // Using relative paths to talk to our local Express proxy
 // This avoids CORS issues because the browser talks to the same origin
 const api = axios.create({
-  // baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
+  baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,19 +14,19 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('campus_connect_token');
 
-  // console.log('🚀 REQUEST:', {
-  //   url: config.url,
-  //   tokenExists: !!token,
-  //   tokenPreview: token?.slice(0, 20),
-  //   headersBefore: config.headers,
-  // });
+  console.log('🚀 REQUEST:', {
+    url: config.url,
+    tokenExists: !!token,
+    tokenPreview: token?.slice(0, 20),
+    headersBefore: config.headers,
+  });
 
   if (token) {
     config.headers = config.headers ?? null;
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // console.log('📤 HEADERS AFTER:', config.headers);
+  console.log('📤 HEADERS AFTER:', config.headers);
 
   return config;
 });
@@ -54,8 +54,7 @@ export const dataApi = {
   deleteRequest: (id: string) => api.delete(`/requests/${id}`),
   createRequest: (data: any) => api.post('/requests', data),
   createProposal: (data: any) => api.post('/offers', data),
-  getMyOffers: () => api.get('/offers/me'),
-  getOffers: (requestId: string) => api.get(`/offers/${requestId}`)
+  getOffers: () => api.get('/offers/me'),
 };
 
 export const updatesApi = {

@@ -45,14 +45,7 @@ const CreateRequest: React.FC = () => {
     setLoading(true);
     setError('');
     
-    try {
-      await dataApi.createRequest({
-        item: title,
-        description,
-        category,
-        budget: parseFloat(budget),
-        timestamp: new Date().toISOString(),
-      });
+    
 
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 1500);

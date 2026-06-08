@@ -210,47 +210,47 @@ const StudentDashboard: React.FC = () => {
     window.scrollTo(0, 0);
     loadVendors();
     loadStudentRequests();
-    loadSharedProposals();
+    // loadSharedProposals();
     // syncWithServerDatabase();
   }, [user?.uid]);
 
-  const loadSharedProposals = () => {
-    const saved = localStorage.getItem('client_shared_proposals');
-    if (saved) {
-      setProposals(JSON.parse(saved));
-    } else {
-      const defaults = [
-        {
-          id: 'prop-fallback-l2-1',
-          requestId: 'req-l2',
-          requestTitle: 'HP Pavilion Laptop Charger (65W)',
-          studentName: user?.displayName || 'Thabo Mokoena',
-          proposedPrice: 380,
-          vendorName: 'Roma Tech Hub',
-          vendorPhone: '+266 5890 1234',
-          vendorRating: 4.9,
-          message: 'Greetings! I have the original 65W blue-tip replacement. I can deliver to your block on the Roma campus or you can pick it up at our Roma Tech Hub studio.',
-          status: 'pending',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: 'prop-fallback-l1-1',
-          requestId: 'req-l1',
-          requestTitle: 'Macroeconomics 101 Textbook',
-          studentName: user?.displayName || 'Mpuleng Tseoa',
-          proposedPrice: 300,
-          vendorName: 'CAS Books & Supplies',
-          vendorPhone: '+266 5971 8820',
-          vendorRating: 4.9,
-          message: 'Hi, I have a very clean, unmarked copy of this Macroeconomics textbook. Ready to bring it to your room in Maseru campus or meet near CAS.',
-          status: 'pending',
-          timestamp: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem('client_shared_proposals', JSON.stringify(defaults));
-      setProposals(defaults);
-    }
-  };
+  // const loadSharedProposals = () => {
+  //   const saved = localStorage.getItem('client_shared_proposals');
+  //   if (saved) {
+  //     setProposals(JSON.parse(saved));
+  //   } else {
+  //     const defaults = [
+  //       {
+  //         id: 'prop-fallback-l2-1',
+  //         requestId: 'req-l2',
+  //         requestTitle: 'HP Pavilion Laptop Charger (65W)',
+  //         studentName: user?.displayName || 'Thabo Mokoena',
+  //         proposedPrice: 380,
+  //         vendorName: 'Roma Tech Hub',
+  //         vendorPhone: '+266 5890 1234',
+  //         vendorRating: 4.9,
+  //         message: 'Greetings! I have the original 65W blue-tip replacement. I can deliver to your block on the Roma campus or you can pick it up at our Roma Tech Hub studio.',
+  //         status: 'pending',
+  //         timestamp: new Date().toISOString()
+  //       },
+  //       {
+  //         id: 'prop-fallback-l1-1',
+  //         requestId: 'req-l1',
+  //         requestTitle: 'Macroeconomics 101 Textbook',
+  //         studentName: user?.displayName || 'Mpuleng Tseoa',
+  //         proposedPrice: 300,
+  //         vendorName: 'CAS Books & Supplies',
+  //         vendorPhone: '+266 5971 8820',
+  //         vendorRating: 4.9,
+  //         message: 'Hi, I have a very clean, unmarked copy of this Macroeconomics textbook. Ready to bring it to your room in Maseru campus or meet near CAS.',
+  //         status: 'pending',
+  //         timestamp: new Date().toISOString()
+  //       }
+  //     ];
+  //     localStorage.setItem('client_shared_proposals', JSON.stringify(defaults));
+  //     setProposals(defaults);
+  //   }
+  // };
 
   const handlePersistProposals = (updatedProposals: any[]) => {
     setProposals(updatedProposals);
@@ -290,60 +290,7 @@ const StudentDashboard: React.FC = () => {
     setSelectedRequestForOffers(null); // Close proposals list drawer
   };
 
- const loadStudentRequests = async () => {
-  try {
-    const response = await dataApi.getMyRequests();
 
-    // Normalize backend response
-    const requestsData =
-      response.data?.requests ??
-      response.data ??
-      [];
-
-    let finalRequests = [];
-
-    if (Array.isArray(requestsData)) {
-      finalRequests = requestsData;
-    } else {
-      console.warn('Unexpected requests format:', response.data);
-      finalRequests = [];
-    }
-
-    // Merge with localStorage (local edits still matter in your app)
-    const local = localStorage.getItem('client_student_requests');
-    const localRequests = local ? JSON.parse(local) : [];
-
-    // Server is source of truth, but preserve unsynced local items
-    const merged = [...finalRequests];
-
-    localRequests.forEach((localReq: any) => {
-      const exists = merged.find((r: any) => r.id === localReq.id);
-      if (!exists) {
-        merged.push(localReq);
-      }
-    });
-
-    setStudentRequests(merged);
-
-    // Sync back to cache
-    localStorage.setItem(
-      'client_student_requests',
-      JSON.stringify(merged)
-    );
-
-  } catch (err) {
-    console.error('Failed to fetch requests:', err);
-
-    // fallback to localStorage only
-    const local = localStorage.getItem('client_student_requests');
-
-    if (local) {
-      setStudentRequests(JSON.parse(local));
-    } else {
-      setStudentRequests([]);
-    }
-  }
-};
 
   const handleToggleRequestStatus = (requestId: string) => {
     const updated = studentRequests.map(req => {

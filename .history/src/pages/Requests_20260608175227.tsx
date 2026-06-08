@@ -48,19 +48,16 @@ const Requests: React.FC = () => {
     setPitchMessage('');
   }, [selectedRequest]);
 
-const loadRequests = async () => {
+  const loadRequests = async () => {
     try {
-        setLoading(true);
-        const response = await dataApi.getRequests();
-        const requestsData = Array.isArray(response.data) ? response.data : [];
-        setRequests(requestsData);
-    } catch (err) {
-        console.error('Failed to load requests:', err);
-        setRequests([]);
-    } finally {
-        setLoading(false);
-    }
-};
+      setLoading(true);
+      let localRequests = [];
+      const local = localStorage.getItem('client_student_requests');
+      if (local) {
+        localRequests = JSON.parse(local);
+      }
+      const localProposals = localStorage.getItem('client_shared_proposals');
+      const proposalsList = localProposals ? JSON.parse(localProposals) : [];
 
   //     try {
   //       const response = await dataApi.sync({
@@ -112,48 +109,54 @@ const loadRequests = async () => {
   //   }
   // };
 
-const handleSendPitch = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!selectedRequest) return;
+  const handleSendPitch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+    
+    const saved = localStorage.getItem('client_shared_proposals');
+    const currentProposals = saved ? JSON.parse(saved) : [];
 
-  const price = parseFloat(pitchPrice);
+    const price = parseFloat(pitchPrice);
+    if (!price || price <= 0) {
+      alert("Please enter a valid price in Maloti.");
+      return;
+    }
 
-  if (!price || price <= 0) {
-    alert("Please enter a valid price in Maloti.");
-    return;
-  }
+    const newProposal = {
+      id: `prop-${Date.now()}`,
+      requestId: selectedRequest.id,
+      requestTitle: selectedRequest.item,
+      studentName: selectedRequest.student || 'Student',
+      proposedPrice: price,
+      message: pitchMessage || `Hi! I have this item and can supply it for M${price}.`,
+      vendorName: user?.displayName || 'Roma Tech Hub',
+      vendorPhone: '+266 5890 1234',
+      vendorRating: 4.9,
+      status: 'pending',
+      timestamp: new Date().toISOString()
+    };
 
-  try {
-    // 🔥 THIS is your api.ts function
-    const response = await dataApi.createProposal({
-      request_id: selectedRequest.id, // backend expects request_id
-      price: price,
-      message:
-        pitchMessage?.trim() ||
-        `Hi! I can supply this item for M${price}.`,
-    });
+    const updatedProposals = [newProposal, ...currentProposals];
+    localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
 
-    // optional: if backend returns message only, this still works
-    console.log("Offer created:", response.data);
+    // Share real-time proposal update with of all browsers/partners!
+    try {
+      await dataApi.sync({
+        proposals: updatedProposals
+      });
+    } catch (syncErr) {
+      console.warn("Real-time pitch sync skipped, offline:", syncErr);
+    }
 
     setPitchSuccess(true);
-    setPitchPrice("");
-    setPitchMessage("");
+    setPitchPrice('');
+    setPitchMessage('');
 
-    // close modal after short delay
+    // Reload list or transition nicely outward
     setTimeout(() => {
       setSelectedRequest(null);
-    }, 1500);
-  } catch (err: any) {
-    console.error("Failed to send pitch:", err);
-
-    const msg =
-      err?.response?.data?.detail ||
-      "Failed to send pitch. Please try again.";
-
-    alert(msg);
-  }
-};
+    }, 1800);
+  };
 
   const filteredRequests = filter === 'All' 
     ? requests 

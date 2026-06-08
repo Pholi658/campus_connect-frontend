@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Store,
@@ -200,7 +199,7 @@ const VendorDashboard: React.FC = () => {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const response = await dataApi.getMyOffers();
+        const response = await dataApi.getOffers();
         if (response && Array.isArray(response.data)) {
           const filteredOffers = response.data.filter((offer: any) => offer.vendorName === user?.displayName);
           setProposals(filteredOffers);
@@ -220,8 +219,8 @@ const VendorDashboard: React.FC = () => {
     try {
       const response = await dataApi.getRequests();
 
-      console.log("REQUESTS FROM API:", response.data);
-
+      console.log("REQUESTS FROM BACKEND");
+console.log(response.data);
       const serverRequests = Array.isArray(response.data) ? response.data : [];
       if (serverRequests.length > 0) {
         setStudentRequests(serverRequests);
@@ -375,7 +374,7 @@ const VendorDashboard: React.FC = () => {
     const matchesCategory = filterCategory === 'all' || req.category.toLowerCase() === filterCategory.toLowerCase();
     return matchesCampus && matchesCategory;
   });
-  console.log("STUDENT REQUESTS STATE", studentRequests);
+
   return (
     <div className="min-h-screen bg-bg-main pb-24 pt-8 sm:pt-12 font-sans text-slate-900">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

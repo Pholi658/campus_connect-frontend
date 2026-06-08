@@ -75,7 +75,7 @@ const SubmittedOffers: React.FC = () => {
     const fetchOffers = async () => {
       try {
         console.log('Fetching offers from backend...');
-        const response = await dataApi.getMyOffers();
+        const response = await dataApi.getOffers();
         console.log('Fetched offers from backend:', response);
         if (response && Array.isArray(response.data)) {
           setProposals(response.data);

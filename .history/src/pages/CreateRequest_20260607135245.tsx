@@ -47,10 +47,10 @@ const CreateRequest: React.FC = () => {
     
     try {
       await dataApi.createRequest({
-        item: title,
+        title,
         description,
         category,
-        budget: parseFloat(budget),
+        budget,
         timestamp: new Date().toISOString(),
       });
 

@@ -54,8 +54,7 @@ export const dataApi = {
   deleteRequest: (id: string) => api.delete(`/requests/${id}`),
   createRequest: (data: any) => api.post('/requests', data),
   createProposal: (data: any) => api.post('/offers', data),
-  getMyOffers: () => api.get('/offers/me'),
-  getOffers: (requestId: string) => api.get(`/offers/${requestId}`)
+  getOffers: () => api.get('/offers/me'),
 };
 
 export const updatesApi = {

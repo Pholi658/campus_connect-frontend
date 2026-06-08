@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-console.log("peep!!")
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   MapPin, 
@@ -212,7 +211,7 @@ const StudentDashboard: React.FC = () => {
     loadStudentRequests();
     loadSharedProposals();
     // syncWithServerDatabase();
-  }, [user?.uid]);
+  }, [user]);
 
   const loadSharedProposals = () => {
     const saved = localStorage.getItem('client_shared_proposals');

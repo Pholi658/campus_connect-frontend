@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-console.log("OFF COMPONENT MOUNTED");
+console.log("OFFERS COMPONENT MOUNTED");
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Briefcase, 
@@ -75,12 +75,9 @@ const SubmittedOffers: React.FC = () => {
     const fetchOffers = async () => {
       try {
         console.log('Fetching offers from backend...');
-        const response = await dataApi.getMyOffers();
+        const response = await dataApi.getOffers();
         console.log('Fetched offers from backend:', response);
-        if (response && Array.isArray(response.data)) {
-          setProposals(response.data);
-          localStorage.setItem('client_shared_proposals', JSON.stringify(response.data));
-        }
+
       } catch (err) {
         console.warn('Silently falling back to localStorage proposals:', err);
       }
@@ -158,16 +155,12 @@ const SubmittedOffers: React.FC = () => {
 
   // Filter proposals
   const filteredProposals = proposals.filter(p => {
-    const requestTitle = p.requestTitle || '';
-    const studentName = p.studentName || '';
-
-    const matchesSearch =
-      requestTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      studentName.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === 'all' || p.status === statusFilter;
-
+    const matchesSearch = 
+      p.requestTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    
     return matchesSearch && matchesStatus;
   });
 

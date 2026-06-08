@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-console.log("peep!!")
+console.log("p")
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   MapPin, 

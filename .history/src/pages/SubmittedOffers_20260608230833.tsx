@@ -75,7 +75,7 @@ const SubmittedOffers: React.FC = () => {
     const fetchOffers = async () => {
       try {
         console.log('Fetching offers from backend...');
-        const response = await dataApi.getMyOffers();
+        const response = await dataApi.getOffers();
         console.log('Fetched offers from backend:', response);
         if (response && Array.isArray(response.data)) {
           setProposals(response.data);
@@ -157,19 +157,7 @@ const SubmittedOffers: React.FC = () => {
     .reduce((sum, p) => sum + (p.proposedPrice || 0), 0);
 
   // Filter proposals
-  const filteredProposals = proposals.filter(p => {
-    const requestTitle = p.requestTitle || '';
-    const studentName = p.studentName || '';
 
-    const matchesSearch =
-      requestTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      studentName.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === 'all' || p.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   return (
     <div className="min-h-screen bg-bg-main pb-24 pt-8 sm:pt-12 font-sans text-slate-900">

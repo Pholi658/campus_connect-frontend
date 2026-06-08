@@ -112,48 +112,7 @@ const loadRequests = async () => {
   //   }
   // };
 
-const handleSendPitch = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!selectedRequest) return;
 
-  const price = parseFloat(pitchPrice);
-
-  if (!price || price <= 0) {
-    alert("Please enter a valid price in Maloti.");
-    return;
-  }
-
-  try {
-    // 🔥 THIS is your api.ts function
-    const response = await dataApi.createProposal({
-      request_id: selectedRequest.id, // backend expects request_id
-      price: price,
-      message:
-        pitchMessage?.trim() ||
-        `Hi! I can supply this item for M${price}.`,
-    });
-
-    // optional: if backend returns message only, this still works
-    console.log("Offer created:", response.data);
-
-    setPitchSuccess(true);
-    setPitchPrice("");
-    setPitchMessage("");
-
-    // close modal after short delay
-    setTimeout(() => {
-      setSelectedRequest(null);
-    }, 1500);
-  } catch (err: any) {
-    console.error("Failed to send pitch:", err);
-
-    const msg =
-      err?.response?.data?.detail ||
-      "Failed to send pitch. Please try again.";
-
-    alert(msg);
-  }
-};
 
   const filteredRequests = filter === 'All' 
     ? requests 

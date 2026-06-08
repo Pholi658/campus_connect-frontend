@@ -50,7 +50,7 @@ const CreateRequest: React.FC = () => {
         item: title,
         description,
         category,
-        budget: parseFloat(budget),
+        budget: parseFloat(budget),   // convert to number,
         timestamp: new Date().toISOString(),
       });
 

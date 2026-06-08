@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Store,
@@ -200,7 +199,7 @@ const VendorDashboard: React.FC = () => {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const response = await dataApi.getMyOffers();
+        const response = await dataApi.getOffers();
         if (response && Array.isArray(response.data)) {
           const filteredOffers = response.data.filter((offer: any) => offer.vendorName === user?.displayName);
           setProposals(filteredOffers);
@@ -220,8 +219,8 @@ const VendorDashboard: React.FC = () => {
     try {
       const response = await dataApi.getRequests();
 
-      console.log("REQUESTS FROM API:", response.data);
-
+      console.log("REQUESTS FROM BACKEND");
+      console.log(response.data);
       const serverRequests = Array.isArray(response.data) ? response.data : [];
       if (serverRequests.length > 0) {
         setStudentRequests(serverRequests);
