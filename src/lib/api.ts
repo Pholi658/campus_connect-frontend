@@ -3,8 +3,8 @@ import axios from 'axios';
 // Using relative paths to talk to our local Express proxy
 // This avoids CORS issues because the browser talks to the same origin
 const api = axios.create({
-  // baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
+  // baseURL: 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
   },
