@@ -62,55 +62,6 @@ const loadRequests = async () => {
     }
 };
 
-  //     try {
-  //       const response = await dataApi.sync({
-  //         requests: localRequests,
-  //         proposals: proposalsList
-  //       });
-
-  //       if (response && response.data) {
-  //         const serverRequests = response.data.requests || [];
-  //         const serverProposals = response.data.proposals || [];
-
-  //         // Merge requests, server-side is authority
-  //         const mergedRequests = [...localRequests];
-  //         serverRequests.forEach((sr: any) => {
-  //           const idx = mergedRequests.findIndex(r => r.id === sr.id);
-  //           if (idx === -1) {
-  //             mergedRequests.push(sr);
-  //           } else {
-  //             mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
-  //           }
-  //         });
-
-  //         // Merge proposals
-  //         const mergedProposals = [...proposalsList];
-  //         serverProposals.forEach((sp: any) => {
-  //           const idx = mergedProposals.findIndex(p => p.id === sp.id);
-  //           if (idx === -1) {
-  //             mergedProposals.push(sp);
-  //           } else {
-  //             mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
-  //           }
-  //         });
-
-  //         localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
-  //         localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
-          
-  //         localRequests = mergedRequests;
-  //       }
-  //     } catch (syncErr) {
-  //       console.warn("Real-time cloud database sync skipped during requests load:", syncErr);
-  //     }
-
-  //     setRequests(localRequests);
-  //   } catch (err) {
-  //     console.error('Failed to load requests, using fallback:', err);
-  //     setRequests([]);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
 const handleSendPitch = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -158,6 +109,26 @@ const handleSendPitch = async (e: React.FormEvent) => {
   const filteredRequests = filter === 'All' 
     ? requests 
     : requests.filter(r => r.category === filter || r.campus === filter);
+
+  const openRequestsCount = requests.filter(
+    (r: any) => r.status !== 'resolved'
+  ).length;
+
+  const totalBudget = requests.reduce(
+    (sum: number, req: any) => sum + Number(req.budget || 0),
+    0
+  );
+
+  const romaNeeds = requests.filter(
+    (r: any) =>
+      r.campus?.toLowerCase() === 'NUL' ||
+      r.location?.toLowerCase() === 'NUL'
+  ).length;
+
+  const maseruNeeds = requests.filter(
+    (r: any) =>
+      r.campus?.toLowerCase() === 'LUCT' || 'Limkokwing University of Creative Technology' || 'CAS'
+  ).length;
 
   return (
     <div className="min-h-screen bg-white pb-20 selection:bg-brand-primary/10 selection:text-brand-primary animate-fade-in">
@@ -430,11 +401,11 @@ const handleSendPitch = async (e: React.FormEvent) => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { label: 'Open Requests', val: '124' },
-              { label: 'Total Budget', val: 'M 45K+' },
-              { label: 'Roma Needs', val: '82' },
-              { label: 'Maseru Needs', val: '42' }
-            ].map(stat => (
+              {label: 'Open Requests', val: openRequestsCount},
+              {label: 'Total Budget', val: `M ${totalBudget.toLocaleString()}`},
+              {label: 'Roma Needs', val: romaNeeds},
+  {label: 'Maseru Needs', val: maseruNeeds}
+ ].map(stat => (
               <div key={stat.label} className="text-center">
                 <p className="text-3xl font-black text-slate-900 tracking-tighter">{stat.val}</p>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1">{stat.label}</p>

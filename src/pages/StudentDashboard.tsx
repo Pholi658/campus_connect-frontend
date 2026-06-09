@@ -156,55 +156,55 @@ const StudentDashboard: React.FC = () => {
   const studentSchoolCode = getStudentSchoolCode(user?.school);
   const studentCampus = getCampusFromSchool(user?.school);
 
-  const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
-    try {
-      const localRequestsRaw = localStorage.getItem('client_student_requests');
-      const localProposalsRaw = localStorage.getItem('client_shared_proposals');
+  // const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
+  //   try {
+  //     const localRequestsRaw = localStorage.getItem('client_student_requests');
+  //     const localProposalsRaw = localStorage.getItem('client_shared_proposals');
       
-      const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
-      const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
+  //     const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
+  //     const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
 
-      const response = await dataApi.sync({
-        requests,
-        proposals: proposalsList
-      });
+  //     const response = await dataApi.sync({
+  //       requests,
+  //       proposals: proposalsList
+  //     });
 
-      if (response && response.data) {
-        const serverRequests = response.data.requests || [];
-        const serverProposals = response.data.proposals || [];
+  //     if (response && response.data) {
+  //       const serverRequests = response.data.requests || [];
+  //       const serverProposals = response.data.proposals || [];
 
-        // Merge requests, server-side is authority
-        const mergedRequests = [...requests];
-        serverRequests.forEach((sr: any) => {
-          const idx = mergedRequests.findIndex(r => r.id === sr.id);
-          if (idx === -1) {
-            mergedRequests.push(sr);
-          } else {
-            mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
-          }
-        });
+  //       // Merge requests, server-side is authority
+  //       const mergedRequests = [...requests];
+  //       serverRequests.forEach((sr: any) => {
+  //         const idx = mergedRequests.findIndex(r => r.id === sr.id);
+  //         if (idx === -1) {
+  //           mergedRequests.push(sr);
+  //         } else {
+  //           mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+  //         }
+  //       });
 
-        // Merge proposals
-        const mergedProposals = [...proposalsList];
-        serverProposals.forEach((sp: any) => {
-          const idx = mergedProposals.findIndex(p => p.id === sp.id);
-          if (idx === -1) {
-            mergedProposals.push(sp);
-          } else {
-            mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
-          }
-        });
+  //       // Merge proposals
+  //       const mergedProposals = [...proposalsList];
+  //       serverProposals.forEach((sp: any) => {
+  //         const idx = mergedProposals.findIndex(p => p.id === sp.id);
+  //         if (idx === -1) {
+  //           mergedProposals.push(sp);
+  //         } else {
+  //           mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+  //         }
+  //       });
 
-        localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
-        localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
+  //       localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+  //       localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
 
-        setStudentRequests(mergedRequests);
-        setProposals(mergedProposals);
-      }
-    } catch (err) {
-      console.warn("Real-time cloud database sync skipped, offline mode:", err);
-    }
-  };
+  //       setStudentRequests(mergedRequests);
+  //       setProposals(mergedProposals);
+  //     }
+  //   } catch (err) {
+  //     console.warn("Real-time cloud database sync skipped, offline mode:", err);
+  //   }
+  // };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -215,6 +215,7 @@ const StudentDashboard: React.FC = () => {
   }, [user?.uid]);
 
   const loadSharedProposals = () => {
+    console.log("Loading shared proposals from localStorage...");
     const saved = localStorage.getItem('client_shared_proposals');
     if (saved) {
       setProposals(JSON.parse(saved));
@@ -282,7 +283,7 @@ const StudentDashboard: React.FC = () => {
     localStorage.setItem('client_student_requests', JSON.stringify(updatedRequests));
 
     // Force post sync to server
-    syncWithServerDatabase(updatedRequests, updatedProposals);
+    // syncWithServerDatabase(updatedRequests, updatedProposals);
 
     // Show beautiful success handshake modal
     setSelectedOfferForAccept(offer);
@@ -507,7 +508,7 @@ const handleDeleteRequest = async (requestId: string) => {
     if (!a.verified && b.verified) return 1;
     return b.rating - a.rating;
   });
-
+  console.log("ALL PROPOSALS", proposals);
   // Filter requests based on status tabs
   const filteredRequests = studentRequests.filter(req => {
     if (requestsFilter === 'active') return req.status !== 'resolved';
@@ -525,19 +526,19 @@ const handleDeleteRequest = async (requestId: string) => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <div className="mb-3 flex items-center gap-2">
+            {/* <div className="mb-3 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
                 <Sparkles size={14} />
               </span>
               <span className="text-xs font-black uppercase tracking-[0.2em] text-brand-primary">
                 {studentSchoolCode} Campus Member
               </span>
-            </div>
+            </div> */}
             <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
               Hello, <span className="text-brand-primary">{user?.displayName?.split(' ')[0] || 'Student'}!</span>
             </h1>
             <p className="mt-3 text-lg font-medium text-slate-500">
-              Welcome to your personalized board for {user?.school || 'National University of Lesotho (NUL)'}.
+              Welcome to your personalized board for {user?.school || 'Your School'}.
             </p>
           </motion.div>
 
@@ -565,7 +566,7 @@ const handleDeleteRequest = async (requestId: string) => {
             </p>
           </div>
           
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
+          {/* <div className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
             <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2">
               <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-brand-primary/10 text-brand-primary">
                 <ShieldCheck size={16} className="sm:w-5 sm:h-5" />
@@ -573,7 +574,7 @@ const handleDeleteRequest = async (requestId: string) => {
               <h3 className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-wider leading-tight">Partners Net</h3>
             </div>
             <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">{sortedVendors.length}</p>
-          </div>
+          </div> */}
 
           <div className="col-span-2 sm:col-span-1 rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-sm border border-slate-100 flex sm:flex-col justify-between items-center sm:items-start">
             <div className="flex items-center sm:flex-col sm:items-start gap-2.5">
@@ -786,87 +787,7 @@ const handleDeleteRequest = async (requestId: string) => {
           )}
         </div>
 
-        {/* Personalized & Filtered Vendors Section */}
-        <div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900">
-              Trusted <span className="text-brand-primary">Campus Vendors</span>
-            </h2>
-            <p className="text-sm font-bold text-slate-500">
-              Verified campus partners, nearby stores, and vendors you previously worked with.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-2">
-             {sortedVendors.map((vendor, idx) => (
-              <motion.div
-                key={vendor.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-white shadow-xl shadow-slate-100 ring-1 ring-slate-100 transition-all hover:-translate-y-2 hover:shadow-2xl"
-              >
-                {/* Vendor Info */}
-                <div className="flex flex-1 flex-col p-5 sm:p-8">
-                  <div className="mb-2 sm:mb-4 flex items-start justify-between gap-1">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                        <h3 className="text-sm sm:text-xl font-black text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-1">
-                          {vendor.name}
-                        </h3>
-                        {vendor.verified && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-brand-primary border border-emerald-100">
-                            <ShieldCheck size={9} /> Verified
-                          </span>
-                        )}
-                        {vendor.workedWith && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-950 px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-yellow-300">
-                            ★ Trusted ({vendor.dealsCount})
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-400">{vendor.category}</p>
-                    </div>
-                  </div>
-
-                  <p className="mb-3 sm:mb-6 text-[11px] sm:text-sm font-medium leading-relaxed text-slate-500 line-clamp-2 sm:line-clamp-none">
-                    {vendor.description}
-                  </p>
-
-                  <div className="mb-4 sm:mb-8 space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-md sm:rounded-lg bg-slate-50 text-slate-400 shrink-0">
-                        <MapPin size={11} className="sm:w-3.5 sm:h-3.5" />
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {vendor.locations.map(loc => (
-                          <span key={loc} className="text-[9px] sm:text-xs font-bold text-slate-600">{loc}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-auto flex items-center gap-1.5 sm:gap-3">
-                    <button 
-                      onClick={() => handleToggleFavorite(vendor)}
-                      className={`flex flex-1 items-center justify-center gap-1 rounded-lg sm:rounded-xl py-2 sm:py-3 text-[9px] sm:text-xs font-black transition-all active:scale-95 select-none ${
-                        isFavorite(vendor.id)
-                          ? 'bg-pink-50 text-pink-500 ring-1 ring-pink-200'
-                          : 'bg-slate-900 text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className="truncate">{isFavorite(vendor.id) ? 'Favorited' : <><span className="hidden sm:inline">Add </span>Favourite</>}</span>
-                      <Heart size={11} className="sm:w-3.5 sm:h-3.5 shrink-0" fill={isFavorite(vendor.id) ? "currentColor" : "none"} />
-                    </button>
-                    <button className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-slate-50 text-slate-500 transition-all hover:bg-brand-primary hover:text-white active:scale-90 shrink-0">
-                      <MessageSquare size={12} className="sm:w-4 sm:h-4" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        
 
         {/* Technical coverage summary */}
         <div className="mt-20">
@@ -877,10 +798,10 @@ const handleDeleteRequest = async (requestId: string) => {
           
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
-              { name: 'Roma Campus (NUL)', vendors: 24, university: 'NUL' },
-              { name: 'Maseru (LUCT)', vendors: 18, university: 'LUCT' },
-              { name: 'Leribe (LCE)', vendors: 7, university: 'LCE' },
-              { name: 'Maseru (CAS)', vendors: 12, university: 'CAS' },
+              { name: 'Roma Campus (NUL)', university: 'NUL' },
+              { name: 'Maseru (LUCT)', university: 'LUCT' },
+              { name: 'Leribe (LCE)', university: 'LCE' },
+              { name: 'Maseru (CAS)', university: 'CAS' },
             ].map((loc, idx) => (
               <motion.div 
                 key={loc.name}
@@ -908,10 +829,7 @@ const handleDeleteRequest = async (requestId: string) => {
                 <h4 className="text-sm font-black text-slate-800 line-clamp-1 transition-colors group-hover/card:text-lime-700">
                   {loc.name}
                 </h4>
-                
-                <p className="mt-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {loc.vendors} Ready Vendors
-                </p>
+                 
               </motion.div>
             ))}
           </div>

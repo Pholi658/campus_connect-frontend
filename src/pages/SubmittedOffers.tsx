@@ -88,19 +88,26 @@ const SubmittedOffers: React.FC = () => {
     fetchOffers();
   }, []);
 
-  const handleWithdrawProposal = async (id: string) => {
-    const confirmation = window.confirm('Are you sure you want to withdraw this pitch/offer?');
-    if (confirmation) {
-      try {
-        await api.delete('/offers/' + id);
-      } catch (err) {
-        console.warn('Failed to delete offer from backend:', err);
-      }
-      const updatedProposals = proposals.filter(p => p.id !== id);
-      setProposals(updatedProposals);
-      localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
+const handleWithdrawProposal = async (id: string) => {
+  const confirmation = window.confirm(
+    'Are you sure you want to withdraw this pitch/offer?'
+  );
+
+  if (confirmation) {
+    try {
+      await dataApi.deleteOffer(id);
+    } catch (err) {
+      console.warn('Failed to delete offer from backend:', err);
     }
-  };
+
+    const updatedProposals = proposals.filter(p => p.id !== id);
+    setProposals(updatedProposals);
+    localStorage.setItem(
+      'client_shared_proposals',
+      JSON.stringify(updatedProposals)
+    );
+  }
+};
 
   const handleOpenEditProposal = (p: any) => {
     setEditingProposal(p);
@@ -108,45 +115,48 @@ const SubmittedOffers: React.FC = () => {
     setRevisedMsg(p.message);
   };
 
-  const handleUpdateProposalValue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProposal) return;
+const handleUpdateProposalValue = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!editingProposal) return;
 
-    const updatedProposals = proposals.map(p => {
-      if (p.id === editingProposal.id) {
-        return {
-          ...p,
-          proposedPrice: parseFloat(revisedPrice) || p.proposedPrice,
-          message: revisedMsg,
-          timestamp: new Date().toISOString()
-        };
-      }
-      return p;
-    });
-
-    setProposals(updatedProposals);
-    localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
-
-    try {
-      await api.put(`/offers/${editingProposal.id}`, {
-        price: parseFloat(revisedPrice),
-        message: revisedMsg
-      });
-    } catch (err) {
-      console.warn('Failed to update offer in backend:', err);
+  const updatedProposals = proposals.map(p => {
+    if (p.id === editingProposal.id) {
+      return {
+        ...p,
+        proposedPrice: parseFloat(revisedPrice) || p.proposedPrice,
+        message: revisedMsg,
+        timestamp: new Date().toISOString()
+      };
     }
+    return p;
+  });
 
-    setEditingProposal(null);
-  };
+  setProposals(updatedProposals);
+  localStorage.setItem(
+    'client_shared_proposals',
+    JSON.stringify(updatedProposals)
+  );
 
-  const handleSimulateStudentStatus = (id: string, newStatus: 'accepted' | 'declined' | 'pending') => {
-    setProposals(proposals.map(p => {
-      if (p.id === id) {
-        return { ...p, status: newStatus };
-      }
-      return p;
-    }));
-  };
+  try {
+    await dataApi.updateOffer(editingProposal.id, {
+      price: parseFloat(revisedPrice),
+      message: revisedMsg
+    });
+  } catch (err) {
+    console.warn('Failed to update offer in backend:', err);
+  }
+
+  setEditingProposal(null);
+};
+
+  // const handleSimulateStudentStatus = (id: string, newStatus: 'accepted' | 'declined' | 'pending') => {
+  //   setProposals(proposals.map(p => {
+  //     if (p.id === id) {
+  //       return { ...p, status: newStatus };
+  //     }
+  //     return p;
+  //   }));
+  // };
 
   // Metrics calculations
   const totalBids = proposals.length;
@@ -171,7 +181,7 @@ const SubmittedOffers: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  return (
+return (
     <div className="min-h-screen bg-bg-main pb-24 pt-8 sm:pt-12 font-sans text-slate-900">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
@@ -367,39 +377,6 @@ const SubmittedOffers: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Simulator Controls Row */}
-                    <div className="flex items-center justify-between gap-2.5 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[10px]">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider px-1">Sim:</span>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleSimulateStudentStatus(prop.id, 'accepted')}
-                          className={`px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] transition-all select-none ${
-                            prop.status === 'accepted' 
-                              ? 'bg-emerald-50 text-brand-primary border-emerald-100' 
-                              : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
-                          }`}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleSimulateStudentStatus(prop.id, 'declined')}
-                          className={`px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] transition-all select-none ${
-                            prop.status === 'declined' 
-                              ? 'bg-rose-50 text-rose-500 border-rose-100' 
-                              : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
-                          }`}
-                        >
-                          Decline
-                        </button>
-                        <button
-                          onClick={() => handleSimulateStudentStatus(prop.id, 'pending')}
-                          className="px-2 py-0.5 font-bold uppercase rounded-md border text-[9px] bg-white hover:bg-slate-100 border-slate-100 text-slate-500 transition-all z-0 cursor-pointer select-none"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Action buttons (Withdraw, Revise) */}
                     <div className="flex gap-3 pt-1">
                       <button
@@ -492,53 +469,21 @@ const SubmittedOffers: React.FC = () => {
                           </td>
 
                           <td className="px-6 py-6 text-right">
-                            <div className="flex flex-col gap-2.5 items-end">
-                              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-[9px]">
-                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider px-1">Sim:</span>
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                onClick={() => handleWithdrawProposal(prop.id)}
+                                className="text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-wider transition-all select-none cursor-pointer"
+                              >
+                                Withdraw
+                              </button>
+                              {prop.status === 'pending' && (
                                 <button
-                                  onClick={() => handleSimulateStudentStatus(prop.id, 'accepted')}
-                                  className={`px-2 py-0.5 font-bold uppercase rounded-md border transition-all ${
-                                    prop.status === 'accepted' 
-                                      ? 'bg-emerald-50 text-brand-primary border-emerald-100' 
-                                      : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
-                                  }`}
+                                  onClick={() => handleOpenEditProposal(prop)}
+                                  className="text-slate-900 hover:text-brand-primary text-[10px] font-black uppercase tracking-wider transition-all select-none cursor-pointer"
                                 >
-                                  Accept
+                                  Revise
                                 </button>
-                                <button
-                                  onClick={() => handleSimulateStudentStatus(prop.id, 'declined')}
-                                  className={`px-2 py-0.5 font-bold uppercase rounded-md border transition-all ${
-                                    prop.status === 'declined' 
-                                      ? 'bg-rose-50 text-rose-500 border-rose-100' 
-                                      : 'bg-white hover:bg-slate-100 border-slate-100 text-slate-500'
-                                  }`}
-                                >
-                                  Decline
-                                </button>
-                                <button
-                                  onClick={() => handleSimulateStudentStatus(prop.id, 'pending')}
-                                  className="px-2 py-0.5 font-bold uppercase rounded-md border bg-white hover:bg-slate-100 border-slate-100 text-slate-500 transition-all z-0 cursor-pointer"
-                                >
-                                  Reset
-                                </button>
-                              </div>
-
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => handleWithdrawProposal(prop.id)}
-                                  className="text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-wider transition-all select-none z-0 cursor-pointer"
-                                >
-                                  Withdraw
-                                </button>
-                                {prop.status === 'pending' && (
-                                  <button
-                                    onClick={() => handleOpenEditProposal(prop)}
-                                    className="text-slate-900 hover:text-brand-primary text-[10px] font-black uppercase tracking-wider transition-all select-none z-0 cursor-pointer"
-                                  >
-                                    Revise
-                                  </button>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </td>
                         </tr>

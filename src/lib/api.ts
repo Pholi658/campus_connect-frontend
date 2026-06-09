@@ -3,8 +3,8 @@ import axios from 'axios';
 // Using relative paths to talk to our local Express proxy
 // This avoids CORS issues because the browser talks to the same origin
 const api = axios.create({
-  baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
-  // baseURL: 'http://127.0.0.1:8000',
+  // baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
+  baseURL: 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -55,7 +55,9 @@ export const dataApi = {
   createRequest: (data: any) => api.post('/requests', data),
   createProposal: (data: any) => api.post('/offers', data),
   getMyOffers: () => api.get('/offers/me'),
-  getOffers: (requestId: string) => api.get(`/offers/${requestId}`)
+  getOffers: (requestId: string) => api.get(`/offers/${requestId}`),
+  deleteOffer: (id: string) => api.delete(`/offers/${id}`),
+  updateOffer: (id: string, data: any) => api.patch(`/offers/${id}`, data),
 };
 
 export const updatesApi = {
