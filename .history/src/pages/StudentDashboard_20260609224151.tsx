@@ -153,11 +153,58 @@ const StudentDashboard: React.FC = () => {
   const [editCategory, setEditCategory] = useState('');
   const [editBudget, setEditBudget] = useState('');
 
-  const [offersForRequest, setOffersForRequest] = useState<any[]>([]);
-const [loadingOffers, setLoadingOffers] = useState(false);
-
   const studentSchoolCode = getStudentSchoolCode(user?.school);
   const studentCampus = getCampusFromSchool(user?.school);
+
+  // const syncWithServerDatabase = async (overrideRequests?: any[], overrideProposals?: any[]) => {
+  //   try {
+  //     const localRequestsRaw = localStorage.getItem('client_student_requests');
+  //     const localProposalsRaw = localStorage.getItem('client_shared_proposals');
+      
+  //     const requests = overrideRequests || (localRequestsRaw ? JSON.parse(localRequestsRaw) : []);
+  //     const proposalsList = overrideProposals || (localProposalsRaw ? JSON.parse(localProposalsRaw) : []);
+
+  //     const response = await dataApi.sync({
+  //       requests,
+  //       proposals: proposalsList
+  //     });
+
+  //     if (response && response.data) {
+  //       const serverRequests = response.data.requests || [];
+  //       const serverProposals = response.data.proposals || [];
+
+  //       // Merge requests, server-side is authority
+  //       const mergedRequests = [...requests];
+  //       serverRequests.forEach((sr: any) => {
+  //         const idx = mergedRequests.findIndex(r => r.id === sr.id);
+  //         if (idx === -1) {
+  //           mergedRequests.push(sr);
+  //         } else {
+  //           mergedRequests[idx] = { ...mergedRequests[idx], ...sr };
+  //         }
+  //       });
+
+  //       // Merge proposals
+  //       const mergedProposals = [...proposalsList];
+  //       serverProposals.forEach((sp: any) => {
+  //         const idx = mergedProposals.findIndex(p => p.id === sp.id);
+  //         if (idx === -1) {
+  //           mergedProposals.push(sp);
+  //         } else {
+  //           mergedProposals[idx] = { ...mergedProposals[idx], ...sp };
+  //         }
+  //       });
+
+  //       localStorage.setItem('client_student_requests', JSON.stringify(mergedRequests));
+  //       localStorage.setItem('client_shared_proposals', JSON.stringify(mergedProposals));
+
+  //       setStudentRequests(mergedRequests);
+  //       setProposals(mergedProposals);
+  //     }
+  //   } catch (err) {
+  //     console.warn("Real-time cloud database sync skipped, offline mode:", err);
+  //   }
+  // };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -166,20 +213,6 @@ const [loadingOffers, setLoadingOffers] = useState(false);
     loadSharedProposals();
     // syncWithServerDatabase();
   }, [user?.uid]);
-
-  const handleOpenOffersModal = async (req: any) => {
-    setSelectedRequestForOffers(req);
-    setLoadingOffers(true);
-    try {
-        const response = await dataApi.getOffers(req.id);
-        setOffersForRequest(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-        console.error('Failed to fetch offers:', err);
-        setOffersForRequest([]);
-    } finally {
-        setLoadingOffers(false);
-    }
-  };
 
   const loadSharedProposals = () => {
     console.log("Loading shared proposals from localStorage...");
@@ -336,32 +369,49 @@ const [loadingOffers, setLoadingOffers] = useState(false);
     setEditBudget(req.budget || '');
   };
 
-const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingRequest) return;
+ const handleSaveEdit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-        await dataApi.editRequest(editingRequest.id, {
-            item: editTitle,
-            description: editDescription,
-            category: editCategory,
-            budget: parseFloat(editBudget),
-        });
-        await loadStudentRequests(); // reload from backend
-        setEditingRequest(null);
-    } catch (err) {
-        console.error('Failed to update request:', err);
+  if (!editingRequest) return;
+
+  const updated = studentRequests.map((req: any) => {
+    if (req.id === editingRequest.id) {
+      return {
+        ...req,
+        item: editTitle,
+        title: editTitle,
+        description: editDescription,
+        category: editCategory,
+        budget: editBudget,
+        timestamp: new Date().toISOString()
+      };
     }
+
+    return req;
+  });
+
+  setStudentRequests(updated);
+
+  localStorage.setItem(
+    'client_student_requests',
+    JSON.stringify(updated)
+  );
+
+  try {
+    await dataApi.updateRequest(editingRequest.id, {
+      item: editTitle,
+      description: editDescription,
+      category: editCategory,
+      budget: editBudget
+    });
+  } catch (err) {
+    console.error('Failed to update request:', err);
+  }
+
+  setEditingRequest(null);
 };
 
-const handleDeleteRequest = async (requestId: string) => {
-    try {
-        await dataApi.deleteRequest(requestId);
-        await loadStudentRequests(); // reload from backend instead of localStorage
-    } catch (err) {
-        console.error('Failed to delete request:', err);
-    }
-};
+
 
  const loadVendors = async () => {
   try {
@@ -626,10 +676,10 @@ const handleDeleteRequest = async (requestId: string) => {
                             ))}
                             
                             <button
-                              onClick={() => handleOpenOffersModal(req)}
+                              onClick={() => setSelectedRequestForOffers(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers →
+                              Explore Offers ({reqPitches.length}) →
                             </button>
                           </div>
                         )}
@@ -768,7 +818,8 @@ const handleDeleteRequest = async (requestId: string) => {
         {/* ========================================================= */}
         <AnimatePresence>
           {selectedRequestForOffers && (() => {
-            const activePitches = offersForRequest.filter((o: any) => o.status === 'pending');
+            const reqPitches = proposals.filter((p: any) => p.requestId === selectedRequestForOffers.id);
+            const activePitches = reqPitches.filter((p: any) => p.status === 'pending');
             return (
               <>
                 <motion.div

@@ -166,7 +166,7 @@ const [loadingOffers, setLoadingOffers] = useState(false);
     loadSharedProposals();
     // syncWithServerDatabase();
   }, [user?.uid]);
-
+  
   const handleOpenOffersModal = async (req: any) => {
     setSelectedRequestForOffers(req);
     setLoadingOffers(true);
@@ -179,8 +179,7 @@ const [loadingOffers, setLoadingOffers] = useState(false);
     } finally {
         setLoadingOffers(false);
     }
-  };
-
+};
   const loadSharedProposals = () => {
     console.log("Loading shared proposals from localStorage...");
     const saved = localStorage.getItem('client_shared_proposals');
@@ -626,10 +625,10 @@ const handleDeleteRequest = async (requestId: string) => {
                             ))}
                             
                             <button
-                              onClick={() => handleOpenOffersModal(req)}
+                              onClick={() => setSelectedRequestForOffers(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers →
+                              Explore Offers ({reqPitches.length}) →
                             </button>
                           </div>
                         )}
@@ -768,7 +767,8 @@ const handleDeleteRequest = async (requestId: string) => {
         {/* ========================================================= */}
         <AnimatePresence>
           {selectedRequestForOffers && (() => {
-            const activePitches = offersForRequest.filter((o: any) => o.status === 'pending');
+            const reqPitches = proposals.filter((p: any) => p.requestId === selectedRequestForOffers.id);
+            const activePitches = reqPitches.filter((p: any) => p.status === 'pending');
             return (
               <>
                 <motion.div
