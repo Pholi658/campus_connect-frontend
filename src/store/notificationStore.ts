@@ -139,49 +139,49 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
 
     // --- STUDENTS NOTIFICATION CRITERIA ---
-    if (user.role === 'student' || !user.role) {
-      // Find students' own request IDs to compare incoming proposals
-      const studentRequests = currentRequests;
-      const studentRequestIds = new Set<string>(studentRequests.map((r) => r.id));
+    // if (user.role === 'student' || !user.role) {
+    //   // Find students' own request IDs to compare incoming proposals
+    //   const studentRequests = currentRequests;
+    //   const studentRequestIds = new Set<string>(studentRequests.map((r) => r.id));
 
-      let fetchedProposals = [...currentProposals];
-      try {
-        const response = await api.get('/offers');
-        if (response && response.data && Array.isArray(response.data)) {
-          fetchedProposals = response.data;
-          localStorage.setItem('client_shared_proposals', JSON.stringify(fetchedProposals));
-        }
-      } catch (err) {
-        console.warn('Silent fallback to currentProposals in syncNotifications:', err);
-      }
+    //   let fetchedProposals = [...currentProposals];
+    //   try {
+    //     const response = await api.get('/offers');
+    //     if (response && response.data && Array.isArray(response.data)) {
+    //       fetchedProposals = response.data;
+    //       localStorage.setItem('client_shared_proposals', JSON.stringify(fetchedProposals));
+    //     }
+    //   } catch (err) {
+    //     console.warn('Silent fallback to currentProposals in syncNotifications:', err);
+    //   }
 
-      // Filter the fetched proposals to only those where prop.requestId matches one of the student's own request IDs
-      const filteredProposals = fetchedProposals.filter(
-        (prop) => prop && prop.requestId && studentRequestIds.has(prop.requestId)
-      );
+    //   // Filter the fetched proposals to only those where prop.requestId matches one of the student's own request IDs
+    //   const filteredProposals = fetchedProposals.filter(
+    //     (prop) => prop && prop.requestId && studentRequestIds.has(prop.requestId)
+    //   );
 
-      filteredProposals.forEach((prop) => {
-        if (!prop || !prop.id) return;
+    //   filteredProposals.forEach((prop) => {
+    //     if (!prop || !prop.id) return;
 
-        // Is this proposal belonging to a request started by the student?
-        const isMyRequest = studentRequestIds.has(prop.requestId);
+    //     // Is this proposal belonging to a request started by the student?
+    //     const isMyRequest = studentRequestIds.has(prop.requestId);
 
-        if (isMyRequest && !seenProposalIdsSet.has(prop.id)) {
-          seenProposalIdsSet.add(prop.id);
-          madeChanges = true;
+    //     if (isMyRequest && !seenProposalIdsSet.has(prop.id)) {
+    //       seenProposalIdsSet.add(prop.id);
+    //       madeChanges = true;
 
-          // If this isn't the fallback/first load, notify
-          if (!isFirstProposalLoad) {
-            notificationsToAdd.push({
-              title: 'New Vendor Offer Received!',
-              message: `"${prop.vendorName || 'A vendor'}" sent a pitch of M${prop.proposedPrice} for your request "${prop.requestTitle || 'your item'}".`,
-              type: 'new_offer',
-              linkTo: '/submitted-offers',
-            });
-          }
-        }
-      });
-    }
+    //       // If this isn't the fallback/first load, notify
+    //       if (!isFirstProposalLoad) {
+    //         notificationsToAdd.push({
+    //           title: 'New Vendor Offer Received!',
+    //           message: `"${prop.vendorName || 'A vendor'}" sent a pitch of M${prop.proposedPrice} for your request "${prop.requestTitle || 'your item'}".`,
+    //           type: 'new_offer',
+    //           linkTo: '/submitted-offers',
+    //         });
+    //       }
+    //     }
+    //   });
+    // }
 
     // Persist seen sets
     if (madeChanges || isFirstRequestLoad || isFirstProposalLoad) {

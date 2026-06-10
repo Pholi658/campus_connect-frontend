@@ -348,14 +348,14 @@ const handleSave = async (e: React.FormEvent) => {
             </div>
 
             {/* Simulated System Integrations info */}
-            <div className="rounded-[2.5rem] bg-emerald-55/30 bg-emerald-50 border border-emerald-150/40 p-6 sm:p-7 shadow-xs">
+            {/* <div className="rounded-[2.5rem] bg-emerald-55/30 bg-emerald-50 border border-emerald-150/40 p-6 sm:p-7 shadow-xs">
               <h4 className="text-xs font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5 mb-2">
                 <Sparkles size={14} className="text-brand-primary" /> Active Safety Seals
               </h4>
               <p className="text-[11px] font-medium text-slate-600 leading-relaxed">
                 CampusConnect ensures that only authenticated students and verified merchants based in Lesotho colleges can send proposals, exchange phone coordinates, and book orders. Never reveal your password tokens to third parties.
               </p>
-            </div>
+            </div> */}
 
           </div>
 

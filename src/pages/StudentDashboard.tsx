@@ -225,13 +225,18 @@ const [loadingOffers, setLoadingOffers] = useState(false);
     localStorage.setItem('client_shared_proposals', JSON.stringify(updatedProposals));
   };
 
-  const handleAcceptOffer = (offer: any) => {
+const handleAcceptOffer = async (offer: any) => {
+  try {
+    // 1. CALL BACKEND FIRST (source of truth)
+    await dataApi.acceptOffer(offer.id);
+
+    // 2. Update local proposals state
     const updatedProposals = proposals.map((p: any) => {
       if (p.requestId === offer.requestId) {
         if (p.id === offer.id) {
           return { ...p, status: 'accepted' };
         } else {
-          return { ...p, status: 'declined' };
+          return { ...p, status: 'rejected' };
         }
       }
       return p;
@@ -239,24 +244,26 @@ const [loadingOffers, setLoadingOffers] = useState(false);
 
     handlePersistProposals(updatedProposals);
 
-    // Update request state status to 'resolved' and remove/comment out urgency setting
+    // 3. Update request status locally (UI only)
     const updatedRequests = studentRequests.map((r: any) => {
       if (r.id === offer.requestId) {
         return { ...r, status: 'resolved' };
       }
       return r;
     });
+
     setStudentRequests(updatedRequests);
     localStorage.setItem('client_student_requests', JSON.stringify(updatedRequests));
 
-    // Force post sync to server
-    // syncWithServerDatabase(updatedRequests, updatedProposals);
-
-    // Show beautiful success handshake modal
+    // 4. UI feedback only
     setSelectedOfferForAccept(offer);
     setShowAcceptSuccessModal(true);
-    setSelectedRequestForOffers(null); // Close proposals list drawer
-  };
+    setSelectedRequestForOffers(null);
+
+  } catch (err) {
+    console.error("Failed to accept offer:", err);
+  }
+};
 
  const loadStudentRequests = async () => {
   try {
@@ -436,7 +443,7 @@ const handleDeleteRequest = async (requestId: string) => {
     if (!a.verified && b.verified) return 1;
     return b.rating - a.rating;
   });
-  console.log("ALL PROPOSALS", proposals);
+  // console.log("ALL PROPOSALS", proposals);
   // Filter requests based on status tabs
   const filteredRequests = studentRequests.filter(req => {
     if (requestsFilter === 'active') return req.status !== 'resolved';
@@ -592,6 +599,11 @@ const handleDeleteRequest = async (requestId: string) => {
                    {/* Interactive Live Proposals & Accepted Deal Indicators */}
                   {req.status !== 'resolved' ? (() => {
                     const reqPitches = proposals.filter((p: any) => p.requestId === req.id);
+                    console.log("==============");
+                    console.log("Request card:", req.id);
+                    console.log("All proposals:", proposals);
+                    console.log("Matching proposals:", reqPitches);
+                    console.log("Matching count:", reqPitches.length);
                     const pendingPitches = reqPitches.filter((p: any) => p.status === 'pending');
                     return (
                       <div className="mb-3 sm:mb-6 rounded-xl sm:rounded-2xl bg-slate-50 p-3 sm:p-4 border border-slate-100/60 text-[10px] sm:text-xs">
@@ -601,7 +613,7 @@ const handleDeleteRequest = async (requestId: string) => {
                             Live Vendor Pitches
                           </span>
                           <span className="font-bold text-slate-400 font-mono text-[8px] sm:text-[10px]">
-                            {reqPitches.length} Total
+                            ({offersForRequest.length}) Total
                           </span>
                         </div>
                         
@@ -629,7 +641,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               onClick={() => handleOpenOffersModal(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers →
+                              Explore Offers({offersForRequest.length}) →
                             </button>
                           </div>
                         )}
@@ -792,7 +804,7 @@ const handleDeleteRequest = async (requestId: string) => {
                     <div className="flex justify-between items-start mb-6">
                       <div>
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-green-700 font-sans">
-                          💼 Active Opportunities ({reqPitches.length})
+                          💼 Active Opportunities ({offersForRequest.length})
                         </span>
                         <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 leading-tight">
                           Offers for <span className="text-brand-primary">"{selectedRequestForOffers.item}"</span>
@@ -837,7 +849,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               <div className="text-right shrink-0">
                                 <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Offered Price</p>
                                 <p className="text-xl sm:text-2xl font-black text-brand-primary font-mono select-none">
-                                  M{offer.proposedPrice}
+                                  M{offer.price}
                                 </p>
                               </div>
                             </div>
@@ -907,7 +919,7 @@ const handleDeleteRequest = async (requestId: string) => {
                     Deal is <span className="text-brand-primary">Secured!</span>
                   </h2>
                   <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-widest font-mono mb-6">
-                    M{selectedOfferForAccept.proposedPrice} Agreement Formed
+                    M{selectedOfferForAccept.price} Agreement Formed
                   </p>
 
                   <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-left mb-6 space-y-3">
@@ -921,12 +933,12 @@ const handleDeleteRequest = async (requestId: string) => {
                       </div>
                     </div>
 
-                    <div>
+                    {/* <div>
                       <p className="text-[10px] font-black uppercase text-slate-400">Requested Item</p>
                       <p className="text-xs font-bold text-slate-700 leading-tight mt-0.5">
-                        {selectedOfferForAccept.requestTitle}
+                        {selectedOfferForAccept.item}
                       </p>
-                    </div>
+                    </div> */}
 
                     <div>
                       <p className="text-[10px] font-black uppercase text-slate-400">Offer Message</p>
@@ -937,13 +949,13 @@ const handleDeleteRequest = async (requestId: string) => {
                   </div>
 
                   <p className="text-xs font-bold text-slate-500 leading-relaxed mb-6">
-                    A WhatsApp chat link has been generated to contact <strong>{selectedOfferForAccept.vendorName}</strong>. Reach out to arrange physical exchange or pickup on campus!
+                    A WhatsApp chat link has been generated to contact <strong>{selectedOfferForAccept.vendor_name}</strong>. Reach out to arrange physical exchange or pickup on campus!
                   </p>
 
                   <div className="space-y-3">
-                    {selectedOfferForAccept.vendorPhone && (
+                    {selectedOfferForAccept.vendor_phone && (
                       <a
-                        href={`https://wa.me/${selectedOfferForAccept.vendorPhone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedOfferForAccept.vendorName)},%20I%20have%2520accepted%20your%20offer%20on%20Campus%2520Connect%20for%20M${selectedOfferForAccept.proposedPrice}!`}
+                        href={`https://wa.me/${selectedOfferForAccept.vendor_phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedOfferForAccept.vendorName)},%20I%20have%2520accepted%20your%20offer%20on%20Campus%2520Connect%20for%20M${selectedOfferForAccept.proposedPrice}!`}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-widest bg-green-500 text-white hover:bg-green-600 rounded-2xl shadow-lg shadow-green-200 transition-all select-none mx-auto cursor-pointer"

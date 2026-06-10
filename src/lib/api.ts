@@ -58,6 +58,7 @@ export const dataApi = {
   getOffers: (requestId: string) => api.get(`/offers/${requestId}`),
   deleteOffer: (id: string) => api.delete(`/offers/${id}`),
   updateOffer: (id: string, data: any) => api.patch(`/offers/${id}`, data),
+  acceptOffer: (id: string) => api.post(`/offers/${id}/accept`),
 };
 
 export const updatesApi = {
