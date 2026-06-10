@@ -27,7 +27,7 @@ async function startServer() {
     console.warn(`WARNING: Invalid or missing BACKEND_URL ("${PARTNER_BACKEND_URL}"). Falling back to default URL: http://127.0.0.1:8000`);
     PARTNER_BACKEND_URL = "https://campus-connect-backend-g7ul.onrender.com";
   //   PARTNER_BACKEND_URL = "http://127.0.0.1:8000"
-  // }
+   }
   // Trim trailing slash to prevent double slash paths (e.g., baseURL//endpoint)
   PARTNER_BACKEND_URL = PARTNER_BACKEND_URL.trim().replace(/\/+$/, "");
   console.log(`Backend proxy configured to route requests to: ${PARTNER_BACKEND_URL}`);
