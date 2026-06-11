@@ -127,7 +127,8 @@ const handleSendPitch = async (e: React.FormEvent) => {
 
   const maseruNeeds = requests.filter(
     (r: any) =>
-      r.campus?.toLowerCase() === 'LUCT' || 'Limkokwing University of Creative Technology'
+      r.campus?.toLowerCase() === 'LUCT' ||
+      r.location?.toLowerCase() === 'LUCT'
   ).length;
 
   return (
