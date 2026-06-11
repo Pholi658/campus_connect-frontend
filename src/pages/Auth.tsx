@@ -630,14 +630,14 @@ const Auth: React.FC = () => {
             </button>
           </div>
 
-          <button 
+          {/* <button 
             type="button"
             onClick={signInWithGoogle}
             className="mt-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 text-xs font-black text-slate-700 ring-1 ring-slate-100 shadow-sm transition-all hover:bg-slate-50 active:scale-95"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             Continue with Google
-          </button>
+          </button> */}
         </div>
 
         <div className="mt-8 text-center text-white/80 drop-shadow-sm">
