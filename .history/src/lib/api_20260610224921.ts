@@ -4,7 +4,7 @@ import axios from 'axios';
 // This avoids CORS issues because the browser talks to the same origin
 const api = axios.create({
   // baseURL: 'https://campus-connect-backend-g7ul.onrender.com',
-  baseURL: 'http://127.0.0.1:8000',
+  // baseURL: 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
   },

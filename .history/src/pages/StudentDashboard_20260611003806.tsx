@@ -574,7 +574,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               onClick={() => handleOpenOffersModal(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers ({reqPitches.length})) →
+                              Explore Offers({reqPitches.length})) →
                             </button>
                           </div>
                         )}

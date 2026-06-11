@@ -225,30 +225,59 @@ const handleAcceptOffer = async (offer: any) => {
   }
 };
 
-const loadStudentRequests = async () => {
-    try {
-        const response = await dataApi.getMyRequests();
-        const requestsData = Array.isArray(response.data) ? response.data : [];
-        setStudentRequests(requestsData);
+ const loadStudentRequests = async () => {
+  try {
+    const response = await dataApi.getMyRequests();
 
-        // Fetch offers for every request and flatten into proposals state
-        const allOffers: any[] = [];
-        for (const req of requestsData) {
-            try {
-                const offersResponse = await dataApi.getOffers(req.id);
-                const offers = Array.isArray(offersResponse.data) ? offersResponse.data : [];
-                allOffers.push(...offers);
-            } catch {
-                // no offers for this request, skip silently
-            }
-        }
-        setProposals(allOffers);
+    // Normalize backend response
+    const requestsData =
+      response.data?.requests ??
+      response.data ??
+      [];
 
-    } catch (err) {
-        console.error('Failed to fetch requests:', err);
-        setStudentRequests([]);
-        setProposals([]);
+    let finalRequests = [];
+
+    if (Array.isArray(requestsData)) {
+      finalRequests = requestsData;
+    } else {
+      console.warn('Unexpected requests format:', response.data);
+      finalRequests = [];
     }
+
+    // Merge with localStorage (local edits still matter in your app)
+    const local = localStorage.getItem('client_student_requests');
+    const localRequests = local ? JSON.parse(local) : [];
+
+    // Server is source of truth, but preserve unsynced local items
+    const merged = [...finalRequests];
+
+    localRequests.forEach((localReq: any) => {
+      const exists = merged.find((r: any) => r.id === localReq.id);
+      if (!exists) {
+        merged.push(localReq);
+      }
+    });
+
+    setStudentRequests(merged);
+
+    // Sync back to cache
+    localStorage.setItem(
+      'client_student_requests',
+      JSON.stringify(merged)
+    );
+
+  } catch (err) {
+    console.error('Failed to fetch requests:', err);
+
+    // fallback to localStorage only
+    const local = localStorage.getItem('client_student_requests');
+
+    if (local) {
+      setStudentRequests(JSON.parse(local));
+    } else {
+      setStudentRequests([]);
+    }
+  }
 };
 
   const handleToggleRequestStatus = (requestId: string) => {
@@ -529,9 +558,7 @@ const handleDeleteRequest = async (requestId: string) => {
 
                    {/* Interactive Live Proposals & Accepted Deal Indicators */}
                   {req.status !== 'resolved' ? (() => {
-                    const reqPitches = proposals.filter((p: any) => 
-                      p.requestId === req.id || p.buyer_request_id === req.id
-                    );
+                    const reqPitches = proposals.filter((p: any) => p.requestId === req.id);
                     console.log("==============");
                     console.log("Request card:", req.id);
                     console.log("All proposals:", proposals);
@@ -546,7 +573,7 @@ const handleDeleteRequest = async (requestId: string) => {
                             Live Vendor Pitches
                           </span>
                           <span className="font-bold text-slate-400 font-mono text-[8px] sm:text-[10px]">
-                            ({reqPitches.length}) Total
+                            ({offersForRequest.length}) Total
                           </span>
                         </div>
                         
@@ -574,7 +601,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               onClick={() => handleOpenOffersModal(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers ({reqPitches.length})) →
+                              Explore Offers({offersForRequest.length}) →
                             </button>
                           </div>
                         )}

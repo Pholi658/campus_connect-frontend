@@ -531,7 +531,7 @@ const handleDeleteRequest = async (requestId: string) => {
                   {req.status !== 'resolved' ? (() => {
                     const reqPitches = proposals.filter((p: any) => 
                       p.requestId === req.id || p.buyer_request_id === req.id
-                    );
+);
                     console.log("==============");
                     console.log("Request card:", req.id);
                     console.log("All proposals:", proposals);
@@ -546,7 +546,7 @@ const handleDeleteRequest = async (requestId: string) => {
                             Live Vendor Pitches
                           </span>
                           <span className="font-bold text-slate-400 font-mono text-[8px] sm:text-[10px]">
-                            ({reqPitches.length}) Total
+                            ({offersForRequest.length}) Total
                           </span>
                         </div>
                         
@@ -574,7 +574,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               onClick={() => handleOpenOffersModal(req)}
                               className="w-full text-center py-2 text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] text-brand-primary bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all select-none active:scale-95"
                             >
-                              Explore Offers ({reqPitches.length})) →
+                              Explore Offers({offersForRequest.length}) →
                             </button>
                           </div>
                         )}
