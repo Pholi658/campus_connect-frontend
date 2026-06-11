@@ -530,7 +530,7 @@ const handleDeleteRequest = async (requestId: string) => {
                    {/* Interactive Live Proposals & Accepted Deal Indicators */}
                   {req.status !== 'resolved' ? (() => {
                     const reqPitches = proposals.filter((p: any) => 
-                      p.requestId === req.id || p.buyer_request_id === req.id
+                      p.requestId === req.id || p.request_id === req.id
                     );
                     console.log("==============");
                     console.log("Request card:", req.id);
@@ -782,7 +782,7 @@ const handleDeleteRequest = async (requestId: string) => {
                               <div className="text-right shrink-0">
                                 <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Offered Price</p>
                                 <p className="text-xl sm:text-2xl font-black text-brand-primary font-mono select-none">
-                                  M{offer.price}
+                                  M{offer.proposedPrice}
                                 </p>
                               </div>
                             </div>
@@ -852,7 +852,7 @@ const handleDeleteRequest = async (requestId: string) => {
                     Deal is <span className="text-brand-primary">Secured!</span>
                   </h2>
                   <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-widest font-mono mb-6">
-                    M{selectedOfferForAccept.price} Agreement Formed
+                    M{selectedOfferForAccept.proposedPrice} Agreement Formed
                   </p>
 
                   <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-left mb-6 space-y-3">
@@ -886,9 +886,9 @@ const handleDeleteRequest = async (requestId: string) => {
                   </p>
 
                   <div className="space-y-3">
-                    {selectedOfferForAccept.vendor_phone && (
+                    {selectedOfferForAccept.vendorPhone && (
                       <a
-                        href={`https://wa.me/${selectedOfferForAccept.vendor_phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedOfferForAccept.vendorName)},%20I%20have%2520accepted%20your%20offer%20on%20Campus%2520Connect%20for%20M${selectedOfferForAccept.proposedPrice}!`}
+                        href={`https://wa.me/${selectedOfferForAccept.vendorPhone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(selectedOfferForAccept.vendorName)},%20I%20have%2520accepted%20your%20offer%20on%20Campus%2520Connect%20for%20M${selectedOfferForAccept.proposedPrice}!`}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-widest bg-green-500 text-white hover:bg-green-600 rounded-2xl shadow-lg shadow-green-200 transition-all select-none mx-auto cursor-pointer"
