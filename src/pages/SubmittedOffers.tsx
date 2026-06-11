@@ -256,7 +256,7 @@ return (
 
         {/* Filters and Search toolbar */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-          <div className="relative flex-1">
+          {/* <div className="relative flex-1">
             <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
@@ -265,7 +265,7 @@ return (
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl bg-slate-50 border border-slate-100/80 pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-brand-primary"
             />
-          </div>
+          </div> */}
 
           <div className="flex flex-wrap gap-1.5 font-sans">
             {(['all', 'pending', 'accepted', 'declined'] as const).map(f => (

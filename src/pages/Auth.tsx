@@ -75,36 +75,76 @@ const Auth: React.FC = () => {
         password,
         phone: `${countryCode}${phone}`.trim(),
         role,
-        ...(role === 'student' && school ? { school } : {})
+        ...(role === "student" && school ? { school } : {}),
       };
 
-      const response = await (mode === 'login' ? authApi.login(payload) : authApi.register(payload));
+      const response = await (mode === "login"
+        ? authApi.login(payload)
+        : authApi.register(payload));
+
       const data = response.data;
 
-      // Extract token dynamically for standard MongoDB / Custom backends
-      const token = data.access_token || data.jwt || data.accessToken || data.idToken || data.id_token || null;
+      /* =====================================
+   REGISTRATION SUCCESS FLOW
+===================================== */
+      if (mode === "register") {
+        setShowSuccess(true);
 
-      // Mapping backend response to store user format
+        setTimeout(() => {
+          setShowSuccess(false);
+
+          // Switch form back to login
+          setMode("login");
+
+          // Clear password fields
+          setPassword("");
+          setConfirmPassword("");
+
+          // Optional: clear errors
+          setError("");
+        }, 1500);
+
+        return;
+      }
+
+      /* =====================================
+   LOGIN SUCCESS FLOW
+===================================== */
+
+      // Extract token
+      const token =
+        data.access_token ||
+        data.jwt ||
+        data.accessToken ||
+        data.idToken ||
+        data.id_token ||
+        null;
+
+      // Build user object
       const user = {
-        uid: data.uid || data.id || 'user-' + Date.now(),
+        uid: data.uid || data.id || "user-" + Date.now(),
         email: data.email || email,
-        displayName: data.displayName || data.name || displayName || email.split('@')[0],
+        displayName:
+          data.displayName || data.name || displayName || email.split("@")[0],
         photoURL: data.photoURL || null,
-        role: data.role || role
+        role: data.role || role,
       };
-      
+
       const authState = useAuthStore.getState();
+
       authState.setUser(user as any);
+
       if (token) {
         authState.setToken(token);
       }
+
       setShowSuccess(true);
-      
+
       setTimeout(() => {
-        if (user.role === 'vendor') {
-          navigate('/requests');
+        if (user.role === "vendor") {
+          navigate("/requests");
         } else {
-          navigate('/dashboard');
+          navigate("/dashboard");
         }
       }, 1500);
     } catch (err: any) {
@@ -147,24 +187,24 @@ const Auth: React.FC = () => {
     }
   };
 
-  const signInWithGoogle = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const mockUser = {
-        uid: 'demo-google',
-        email: 'student@google.com',
-        displayName: 'Google Student',
-        photoURL: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-        role: 'student'
-      };
-      useAuthStore.getState().setUser(mockUser as any);
-      setLoading(false);
-      setShowSuccess(true);
-      setTimeout(() => {
-        navigate('/create-request');
-      }, 1500);
-    }, 1000);
-  };
+  // const signInWithGoogle = () => {
+  //   setLoading(true);
+  //   setTimeout(() => {
+  //     const mockUser = {
+  //       uid: 'demo-google',
+  //       email: 'student@google.com',
+  //       displayName: 'Google Student',
+  //       photoURL: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+  //       role: 'student'
+  //     };
+  //     useAuthStore.getState().setUser(mockUser as any);
+  //     setLoading(false);
+  //     setShowSuccess(true);
+  //     setTimeout(() => {
+  //       navigate('/create-request');
+  //     }, 1500);
+  //   }, 1000);
+  // };
 
   const bypassWithMockUser = (selectedRole: 'student' | 'vendor') => {
     setLoading(true);

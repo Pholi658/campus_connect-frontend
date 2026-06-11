@@ -113,14 +113,14 @@ const Navbar: React.FC = () => {
 
           {/* Search & Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="relative hidden lg:block">
+            {/* <div className="relative hidden lg:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
                 type="text" 
                 placeholder="Search items, vendors, or requests..." 
                 className="h-10 w-80 rounded-full border-none bg-slate-100/80 pl-10 pr-4 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-primary sm:w-96"
               />
-            </div>
+            </div> */}
 
             {user ? (
               <div className="flex items-center gap-3 sm:gap-6">
